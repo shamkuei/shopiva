@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCart, selectCartTotal } from '@/lib/cartStore';
 import { useHydrated } from '@/lib/useHydrated';
@@ -9,11 +8,9 @@ import { apiStorePost, formatPrice } from '@/lib/api';
 import type { Order } from '@/lib/types';
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const hydrated = useHydrated();
   const items = useCart((s) => s.items);
   const total = useCart(selectCartTotal);
-  const clear = useCart((s) => s.clear);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -31,18 +28,22 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError('');
     try {
+      // 1. Create the order (status: pending).
       const order = await apiStorePost<Order>('/api/orders', {
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-        customer: {
-          name: name.trim(),
-          phone: phone.trim() || undefined,
-          address: address.trim(),
-        },
+        customer: { name: name.trim(), phone: phone.trim() || undefined, address: address.trim() },
       });
-      clear();
-      router.push(`/checkout/success?id=${order.id}`);
+
+      // 2. Start payment and redirect to Zarinpal. The cart is cleared only on
+      //    the result page once payment is confirmed, so a failed/cancelled
+      //    payment leaves the cart intact for retry.
+      const { gatewayUrl } = await apiStorePost<{ gatewayUrl: string }>(
+        `/api/orders/${order.id}/pay`,
+        {},
+      );
+      window.location.href = gatewayUrl;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Order failed. Please try again.');
+      setError(err instanceof Error ? err.message : 'Checkout failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -82,12 +83,7 @@ export default function CheckoutPage() {
           </label>
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Phone number</span>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className={inputCls}
-            />
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
           </label>
           <label className="block">
             <span className="text-sm font-medium text-slate-700">Shipping address</span>
@@ -107,7 +103,7 @@ export default function CheckoutPage() {
             disabled={submitting}
             className="w-full rounded-lg bg-brand px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-dark disabled:opacity-60"
           >
-            {submitting ? 'Placing order…' : `Place order · ${formatPrice(total.toFixed(2))}`}
+            {submitting ? 'Redirecting to payment…' : `Proceed to payment · ${formatPrice(total.toFixed(2))}`}
           </button>
         </form>
 

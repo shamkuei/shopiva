@@ -1,7 +1,9 @@
 import type { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
+import { env } from '../config/env';
 import { orderService } from '../services/order.service';
+import * as zarinpalService from '../services/zarinpal.service';
 
 /** Public checkout: create an Order + OrderItems (status `pending`). */
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
@@ -38,4 +40,35 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     customer: cleanCustomer,
   });
   res.status(201).json({ data: order });
+});
+
+/**
+ * Start payment for an order: request an authority from Zarinpal and return the
+ * gateway URL the client should redirect the user to.
+ */
+export const pay = asyncHandler(async (req: Request, res: Response) => {
+  const order = await orderService.getOrderForStore(req.store!.id, req.params.id as string);
+  if (!order) throw ApiError.notFound('Order not found');
+  if (order.status === 'paid') throw ApiError.badRequest('Order is already paid');
+
+  // Zarinpal amounts are integer Tomans with a 1000-Toman minimum.
+  const amount = Math.round(Number(order.totalAmount));
+  if (!Number.isFinite(amount) || amount < 1000) {
+    throw ApiError.badRequest('Order amount is below the Zarinpal minimum (1000 Toman)');
+  }
+
+  const { gatewayUrl, authority } = await zarinpalService
+    .requestPayment({
+      amount,
+      callbackUrl: `${env.zarinpalCallbackUrl}?order=${order.id}`,
+      description: `Order ${order.id}`,
+    })
+    .catch((err: unknown) => {
+      // Upstream gateway failure → 502, surfaced to the client as a clear error.
+      throw new ApiError(502, err instanceof Error ? err.message : 'Payment gateway error');
+    });
+
+  await orderService.recordAuthority(order.id, authority);
+
+  res.json({ data: { gatewayUrl, authority } });
 });

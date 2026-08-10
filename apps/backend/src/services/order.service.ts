@@ -93,4 +93,36 @@ export const orderService = {
       return order;
     });
   },
+
+  /** Lookup scoped to a tenant (used by the pay endpoint). */
+  async getOrderForStore(storeId: string, id: string): Promise<Order | null> {
+    const rows = await db
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, id), eq(orders.storeId, storeId)))
+      .limit(1);
+    return rows[0] ?? null;
+  },
+
+  /** Lookup by id only — the gateway callback has no tenant context, but it
+   *  carries an unguessable order id and is verified by Zarinpal server-side. */
+  async getOrderById(id: string): Promise<Order | null> {
+    const rows = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+    return rows[0] ?? null;
+  },
+
+  async recordAuthority(orderId: string, authority: string): Promise<void> {
+    await db.update(orders).set({ authority }).where(eq(orders.id, orderId));
+  },
+
+  async markPaid(orderId: string, refId?: string): Promise<void> {
+    await db
+      .update(orders)
+      .set({ status: 'paid', refId: refId ?? null })
+      .where(eq(orders.id, orderId));
+  },
+
+  async markFailed(orderId: string): Promise<void> {
+    await db.update(orders).set({ status: 'failed' }).where(eq(orders.id, orderId));
+  },
 };

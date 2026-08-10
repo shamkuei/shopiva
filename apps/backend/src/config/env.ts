@@ -31,4 +31,15 @@ export const env = {
   jwtRefreshTtl: process.env.JWT_REFRESH_TTL ?? '7d',
   // Set COOKIE_SECURE=true behind HTTPS in production.
   cookieSecure: process.env.COOKIE_SECURE === 'true',
+
+  // Payments (Zarinpal). All optional so the app still boots without them.
+  // Set ZARINPAL_MERCHANT_ID to your gateway merchant ID (required to actually
+  // charge). Sandbox is on by default for local/dev.
+  zarinpalMerchantId: process.env.ZARINPAL_MERCHANT_ID ?? '',
+  zarinpalSandbox: (process.env.ZARINPAL_SANDBOX ?? 'true') !== 'false',
+  // Backend callback URL the gateway redirects the browser back to.
+  zarinpalCallbackUrl:
+    process.env.ZARINPAL_CALLBACK_URL ?? 'http://localhost:4000/api/payments/callback',
+  // Public frontend URL (used to redirect to the result page after verifying).
+  webUrl: process.env.WEB_URL ?? 'http://localhost:3000',
 } as const;

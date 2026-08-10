@@ -85,22 +85,23 @@ shopiva/
 │   │   │   │   ├── schema.ts        # multi-tenant data model
 │   │   │   │   ├── index.ts         # drizzle(client, { schema })
 │   │   │   │   └── seed.ts          # default store + sample products
-│   │   │   ├── middlewares/         # tenant, auth (requireAuth/Owner), errors
-│   │   │   ├── routes/              # auth, admin, store, product, health
+│   │   │   ├── middlewares/         # tenant, auth (requireAuth/Owner), errors, upload
+│   │   │   ├── routes/              # auth, admin, store, product, order, payment, health
 │   │   │   ├── controllers/         # request/response orchestration
-│   │   │   ├── services/            # auth, store, product (Drizzle queries)
+│   │   │   ├── services/            # auth, store, product, order, zarinpal
 │   │   │   ├── utils/               # ApiError, asyncHandler, jwt, authCookies
 │   │   │   ├── types/               # Express Request augmentation
 │   │   │   ├── app.ts               # express app wiring
 │   │   │   └── server.ts            # listen + graceful shutdown
-│   │   ├── test/auth.test.ts        # vitest + supertest endpoint tests
+│   │   ├── test/                    # vitest + supertest (auth, products, orders, payments)
+│   │   ├── drizzle/                 # committed SQL migrations
 │   │   ├── drizzle.config.ts        # drizzle-kit config (push/migrate/studio)
 │   │   ├── Dockerfile
 │   │   └── docker-entrypoint.sh     # migrate + seed on boot
 │   └── frontend/                    # Next.js App Router + Tailwind
-│       ├── app/                     # storefront, login, register, admin
-│       ├── components/              # ProductCard, …
-│       ├── lib/                     # api client, shared types
+│       ├── app/                     # storefront, cart, checkout, payment result, login, register, admin
+│       ├── components/              # ProductCard, CartBadge, ProductFormModal, …
+│       ├── lib/                     # api client, cart store (Zustand), shared types
 │       ├── middleware.ts            # gates /admin and the auth routes
 │       ├── next.config.mjs
 │       ├── tailwind.config.ts
@@ -157,6 +158,36 @@ cookie) and skips the auth pages when already logged in.
 > Passwords are hashed with **bcryptjs** (pure-JS bcrypt — same algorithm/API as
 > native `bcrypt`, no native build step). Swap to `bcrypt` with a one-line change
 > if you prefer the native addon.
+
+---
+
+## Payments (Zarinpal)
+
+Checkout creates a `pending` order, then hands off to the Zarinpal gateway:
+
+1. `POST /api/orders/:id/pay` (tenant-scoped) — requests an authority from
+   Zarinpal and returns `{ gatewayUrl }`. The frontend redirects the browser
+   there (`window.location.href`).
+2. Zarinpal redirects back to `GET /api/payments/callback?Authority=…&Status=…&order=…`
+   (tenant-agnostic — the gateway sends no `x-store-subdomain` header).
+3. The backend verifies the transaction with Zarinpal **server-side**, then
+   redirects to the frontend result page:
+   - `code 100/101` → order marked **paid** → `/payment/result?status=paid&ref=…`
+   - cancelled (`Status≠OK`) or verification failure → order marked **failed** →
+     `/payment/result?status=failed` (the cart is left intact so the customer
+     can retry).
+
+Frontend: `/checkout` → gateway → `/payment/result` (success/failure). The cart
+is cleared only after a verified payment.
+
+Configuration (all in `.env`): `ZARINPAL_MERCHANT_ID`, `ZARINPAL_SANDBOX=true`
+(sandbox by default), `ZARINPAL_CALLBACK_URL`, `WEB_URL`. Amounts are sent to
+Zarinpal as integer **Tomans** (1000-Toman minimum) — handle currency conversion
+for production. Schema change (orders `authority`/`ref_id` columns + a `failed`
+status) is in migration `0001_add_payment_fields.sql`.
+
+> A merchant ID is required to actually charge. For sandbox testing the default
+> placeholder works against Zarinpal's sandbox; replace it with your own for live.
 
 ---
 

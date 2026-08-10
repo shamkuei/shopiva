@@ -30,6 +30,7 @@ export const userRoleEnum = pgEnum('user_role', ['OWNER', 'ADMIN', 'STAFF']);
 export const orderStatusEnum = pgEnum('order_status', [
   'pending',
   'paid',
+  'failed',
   'shipped',
   'cancelled',
 ]);
@@ -120,6 +121,9 @@ export const orders = pgTable(
     customerName: varchar('customer_name', { length: 255 }).notNull(),
     customerPhone: varchar('customer_phone', { length: 50 }),
     customerAddress: text('customer_address'),
+    // Zarinpal payment tracking (nullable; populated during the payment flow).
+    authority: varchar('authority', { length: 255 }),
+    refId: varchar('ref_id', { length: 64 }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [

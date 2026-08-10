@@ -9,6 +9,7 @@ import routes from './routes';
 import healthRoute from './routes/health.route';
 import authRoute from './routes/auth.route';
 import adminRoute from './routes/admin.route';
+import paymentRoute from './routes/payment.route';
 import { tenantMiddleware } from './middlewares/tenantMiddleware';
 import { requireAuth } from './middlewares/authMiddleware';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandler';
@@ -40,6 +41,9 @@ export function createApp() {
   // Public + auth endpoints (not tenant-scoped).
   app.use('/api/health', healthRoute);
   app.use('/api/auth', authRoute);
+
+  // Zarinpal callback (no tenant header) — verifies then redirects to the web.
+  app.use('/api/payments', paymentRoute);
 
   // Admin panel API — protected; scoped by the authenticated user's store.
   app.use('/api/admin', requireAuth, adminRoute);
