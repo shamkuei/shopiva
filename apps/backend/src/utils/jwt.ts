@@ -13,10 +13,17 @@ export interface RefreshTokenPayload {
 }
 
 export const signAccessToken = (payload: AccessTokenPayload): string =>
-  jwt.sign(payload, env.jwtAccessSecret, { expiresIn: env.jwtAccessTtl });
+  // @types/jsonwebtoken types `expiresIn` as `number | ms.StringValue` (branded),
+  // which rejects a plain string. The string form ("15m", "7d") is valid at
+  // runtime — jsonwebtoken parses it via `ms` — so we assert the options shape.
+  jwt.sign(payload, env.jwtAccessSecret, {
+    expiresIn: env.jwtAccessTtl,
+  } as unknown as jwt.SignOptions);
 
 export const signRefreshToken = (payload: RefreshTokenPayload): string =>
-  jwt.sign(payload, env.jwtRefreshSecret, { expiresIn: env.jwtRefreshTtl });
+  jwt.sign(payload, env.jwtRefreshSecret, {
+    expiresIn: env.jwtRefreshTtl,
+  } as unknown as jwt.SignOptions);
 
 export const verifyAccessToken = (token: string): AccessTokenPayload =>
   jwt.verify(token, env.jwtAccessSecret) as AccessTokenPayload;

@@ -90,7 +90,7 @@ export const refresh = asyncHandler(async (req: Request, res: Response) => {
   res.status(200).json({ data: { ok: true } });
 });
 
-export const logout = (req: Request, res: Response) => {
+export const logout = (_req: Request, res: Response) => {
   clearAuthCookies(res);
   res.status(200).json({ data: { ok: true } });
 };

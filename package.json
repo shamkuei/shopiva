@@ -15,6 +15,7 @@
     "rebuild": "docker compose build --no-cache",
     "logs": "docker compose logs -f backend frontend",
     "ps": "docker compose ps",
+    "test": "npm run test -w @shopiva/backend",
     "db:push": "docker compose exec backend npm run db:push",
     "db:studio": "docker compose exec backend npm run db:studio"
   },

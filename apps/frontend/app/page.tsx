@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { ProductCard } from '@/components/ProductCard';
 import type { Product, Store } from '@/lib/types';
 
@@ -30,9 +31,17 @@ export default async function Home() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
       <header className="mb-10">
-        <p className="text-sm font-semibold uppercase tracking-wider text-brand">
-          {store ? `${store.subdomain}.shopiva.app` : 'Shopiva'}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand">
+            {store ? `${store.subdomain}.shopiva.app` : 'Shopiva'}
+          </p>
+          <Link
+            href="/admin"
+            className="text-sm font-semibold text-brand hover:underline"
+          >
+            Admin →
+          </Link>
+        </div>
         <h1 className="mt-1 text-4xl font-bold tracking-tight text-slate-900">
           {store ? store.name : 'Your storefront'}
         </h1>

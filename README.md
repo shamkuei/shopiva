@@ -42,6 +42,9 @@ Redis, and on first boot the backend automatically:
 
 Open:
 - **Frontend (storefront):** http://localhost:3000
+- **Register / create a store:** http://localhost:3000/register
+- **Log in:** http://localhost:3000/login
+- **Admin panel (protected):** http://localhost:3000/admin
 - **Backend API:** http://localhost:4000
 - **Health check:** http://localhost:4000/api/health
 - **Products (JSON):** http://localhost:4000/api/products
@@ -82,21 +85,23 @@ shopiva/
 │   │   │   │   ├── schema.ts        # multi-tenant data model
 │   │   │   │   ├── index.ts         # drizzle(client, { schema })
 │   │   │   │   └── seed.ts          # default store + sample products
-│   │   │   ├── middlewares/         # tenant resolution, error handling
-│   │   │   ├── routes/              # route definitions (thin)
+│   │   │   ├── middlewares/         # tenant, auth (requireAuth/Owner), errors
+│   │   │   ├── routes/              # auth, admin, store, product, health
 │   │   │   ├── controllers/         # request/response orchestration
-│   │   │   ├── services/            # data access (Drizzle queries)
-│   │   │   ├── utils/               # ApiError, asyncHandler
+│   │   │   ├── services/            # auth, store, product (Drizzle queries)
+│   │   │   ├── utils/               # ApiError, asyncHandler, jwt, authCookies
 │   │   │   ├── types/               # Express Request augmentation
 │   │   │   ├── app.ts               # express app wiring
 │   │   │   └── server.ts            # listen + graceful shutdown
+│   │   ├── test/auth.test.ts        # vitest + supertest endpoint tests
 │   │   ├── drizzle.config.ts        # drizzle-kit config (push/migrate/studio)
 │   │   ├── Dockerfile
-│   │   └── docker-entrypoint.sh     # db push + seed on boot
+│   │   └── docker-entrypoint.sh     # migrate + seed on boot
 │   └── frontend/                    # Next.js App Router + Tailwind
-│       ├── app/                     # layout.tsx, page.tsx, globals.css
+│       ├── app/                     # storefront, login, register, admin
 │       ├── components/              # ProductCard, …
 │       ├── lib/                     # api client, shared types
+│       ├── middleware.ts            # gates /admin and the auth routes
 │       ├── next.config.mjs
 │       ├── tailwind.config.ts
 │       └── Dockerfile
@@ -120,6 +125,53 @@ shopiva/
 
 To add a second store later, create one (`POST` is straightforward to add), then
 send its slug as the `x-store-slug` header; the rest works unchanged.
+
+---
+
+## Authentication
+
+Store-owner auth is JWT-based with tokens stored **only in httpOnly cookies**
+(never `localStorage`, never returned in response bodies):
+
+- `POST /api/auth/register` — creates a Store + owner User together (atomic),
+  hashes the password (bcrypt), and sets the cookies.
+- `POST /api/auth/login` — verifies credentials and sets the cookies.
+- `POST /api/auth/refresh` — rotates the access token from the refresh cookie.
+- `POST /api/auth/logout` — clears the cookies.
+- `GET  /api/auth/me` — returns the current user (protected).
+
+Cookies:
+
+- `access_token` (15m, `path=/`) — short-lived, sent on every API request.
+- `refresh_token` (7d, `path=/api/auth`) — only sent to the refresh/logout endpoints.
+
+`requireAuth` middleware reads + verifies the access cookie and protects
+`/api/admin/*` (the admin panel API, scoped to the owner's store). A
+`requireOwner` guard restricts owner-only routes.
+
+On the frontend, `app/login` and `app/register` post to the auth endpoints
+(`credentials: 'include'`) and redirect to `/admin` on success. A Next.js
+`middleware.ts` gates `/admin` (redirects to `/login` without an `access_token`
+cookie) and skips the auth pages when already logged in.
+
+> Passwords are hashed with **bcryptjs** (pure-JS bcrypt — same algorithm/API as
+> native `bcrypt`, no native build step). Swap to `bcrypt` with a one-line change
+> if you prefer the native addon.
+
+---
+
+## Testing
+
+```bash
+npm test                      # = npm run test -w @shopiva/backend (vitest)
+```
+
+`apps/backend/test/auth.test.ts` exercises the auth endpoints through the real
+Express app (supertest) with the database and Redis mocked, so it needs no live
+infrastructure. bcrypt hashing and JWT signing run for real. It covers
+registration (store + owner created, hashed password, cookies), duplicate/short/
+missing-field errors, login (success / wrong password / unknown email),
+`/me`, refresh, logout, and the protected `/api/admin/store`.
 
 ---
 
