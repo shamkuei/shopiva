@@ -4,25 +4,26 @@
 export type Store = {
   id: string;
   name: string;
-  slug: string;
-  domain: string | null;
-  status: 'TRIAL' | 'ACTIVE' | 'SUSPENDED';
-  plan: 'FREE' | 'PRO' | 'ENTERPRISE';
-  defaultCurrency: string;
+  subdomain: string;
+  ownerId: string | null;
   createdAt: string;
-  updatedAt: string;
 };
 
 export type Product = {
   id: string;
-  name: string;
+  storeId: string;
+  title: string;
   description: string | null;
   price: string;
-  currency: string;
-  sku: string | null;
+  imageUrl: string | null;
   stock: number;
-  active: boolean;
-  storeId: string;
+  category: string | null;
   createdAt: string;
-  updatedAt: string;
+};
+
+export type User = {
+  id: string;
+  email: string;
+  role: string;
+  storeId: string;
 };

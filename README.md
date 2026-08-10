@@ -36,8 +36,8 @@ npm start
 That's it. Docker builds the backend and frontend images, starts PostgreSQL and
 Redis, and on first boot the backend automatically:
 
-1. `drizzle-kit push` — create/sync the database schema from `src/db/schema.ts`
-2. `seed` — create the default store + sample products (and an `updated_at` trigger)
+1. `drizzle-kit migrate` — apply pending migrations (from `src/db/schema.ts`)
+2. `seed` — create the default store + sample products
 3. start the API
 
 Open:
@@ -143,17 +143,19 @@ npm run dev -w @shopiva/frontend    # http://localhost:3000
 Apply the schema and seed once:
 
 ```bash
-npm run db:push -w @shopiva/backend
-npm run db:seed -w @shopiva/backend
+npm run db:generate -w @shopiva/backend   # generate the initial migration
+npm run db:migrate  -w @shopiva/backend   # apply it
+npm run db:seed     -w @shopiva/backend
 ```
 
 ---
 
 ## Notes
 
-- Development uses `drizzle-kit push` to sync the schema. For production,
-  generate versioned migrations with `npm run db:generate` (creates files under
-  `apps/backend/drizzle/`) and apply them via `drizzle-kit migrate`.
-- `updated_at` is kept current by a Postgres trigger created by the seed script
-  (Postgres has no native auto-updating timestamp).
+- Migrations are the source of truth. Change the schema in `src/db/schema.ts`,
+  then `npm run db:generate` (writes versioned SQL under `apps/backend/drizzle/`)
+  and `npm run db:migrate` to apply it. The container entrypoint runs
+  `drizzle-kit migrate` on boot, so committed migrations apply automatically.
+  `npm run db:push` is available as a quick dev-only shortcut (it syncs the
+  schema without creating migration files).
 - Secrets in `.env.example` are placeholders — replace them before any real use.

@@ -13,8 +13,17 @@ export const storeService = {
     return db.select().from(stores).orderBy(desc(stores.createdAt));
   },
 
-  async getBySlug(slug: string): Promise<Store | null> {
-    const rows = await db.select().from(stores).where(eq(stores.slug, slug)).limit(1);
+  async getBySubdomain(subdomain: string): Promise<Store | null> {
+    const rows = await db
+      .select()
+      .from(stores)
+      .where(eq(stores.subdomain, subdomain))
+      .limit(1);
+    return rows[0] ?? null;
+  },
+
+  async getById(id: string): Promise<Store | null> {
+    const rows = await db.select().from(stores).where(eq(stores.id, id)).limit(1);
     return rows[0] ?? null;
   },
 

@@ -1,16 +1,13 @@
 #!/bin/sh
-# Runs on every backend container start. Keeps the DB schema in sync and seeds
-# a default store so the API is usable immediately.
+# Runs on every backend container start. Applies pending Drizzle migrations and
+# seeds a default store so the API is usable immediately.
 #
 # We call the locally-installed drizzle-kit/tsx binaries directly (not `npx`)
-# so the entrypoint never blocks on a package-registry lookup. Drizzle has no
-# separate "generate" step — the schema IS the TypeScript source.
+# so the entrypoint never blocks on a package-registry lookup.
 set -e
 
-echo "[entrypoint] Pushing schema to the database (drizzle-kit push)..."
-# `push` syncs src/db/schema.ts to the database. For production, generate
-# migrations (`drizzle-kit generate`) and apply them with `drizzle-kit migrate`.
-node_modules/.bin/drizzle-kit push --force
+echo "[entrypoint] Applying Drizzle migrations..."
+node_modules/.bin/drizzle-kit migrate
 
 echo "[entrypoint] Seeding database..."
 node_modules/.bin/tsx src/db/seed.ts

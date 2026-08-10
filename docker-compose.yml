@@ -55,7 +55,7 @@ services:
       # Hostname `postgres` resolves to the postgres service on the compose network.
       DATABASE_URL: postgresql://${POSTGRES_USER:-shopiva}:${POSTGRES_PASSWORD:-shopiva}@postgres:5432/${POSTGRES_DB:-shopiva}?schema=public
       REDIS_URL: redis://redis:6379
-      STORE_DEFAULT_SLUG: ${STORE_DEFAULT_SLUG:-default}
+      STORE_DEFAULT_SUBDOMAIN: ${STORE_DEFAULT_SUBDOMAIN:-default}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     ports:
       - "${BACKEND_PORT:-4000}:4000"

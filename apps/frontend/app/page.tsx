@@ -4,12 +4,12 @@ import type { Product, Store } from '@/lib/types';
 // Server-side base URL. Inside Docker this resolves to the backend service;
 // outside Docker it falls back to localhost.
 const API_URL = process.env.API_URL ?? 'http://localhost:4000';
-const STORE_SLUG = 'default';
+const STORE_SUBDOMAIN = 'default';
 
 async function fetchJson<T>(path: string): Promise<T | null> {
   try {
     const res = await fetch(`${API_URL}${path}`, {
-      headers: { 'x-store-slug': STORE_SLUG },
+      headers: { 'x-store-subdomain': STORE_SUBDOMAIN },
       cache: 'no-store',
     });
     if (!res.ok) return null;
@@ -31,7 +31,7 @@ export default async function Home() {
     <div className="mx-auto max-w-5xl px-6 py-12">
       <header className="mb-10">
         <p className="text-sm font-semibold uppercase tracking-wider text-brand">
-          {store ? `${store.plan} plan · ${store.status}` : 'Shopiva'}
+          {store ? `${store.subdomain}.shopiva.app` : 'Shopiva'}
         </p>
         <h1 className="mt-1 text-4xl font-bold tracking-tight text-slate-900">
           {store ? store.name : 'Your storefront'}

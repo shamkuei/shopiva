@@ -11,25 +11,24 @@ type ProductInsert = typeof products.$inferInsert;
  */
 
 export const productService = {
-  listByStore(storeId: string) {
-    return db.query.products.findMany({
-      where: eq(products.storeId, storeId),
-      with: { category: true },
-      orderBy: desc(products.createdAt),
-    });
+  listByStore(storeId: string): Promise<Product[]> {
+    return db
+      .select()
+      .from(products)
+      .where(eq(products.storeId, storeId))
+      .orderBy(desc(products.createdAt));
   },
 
-  getById(storeId: string, id: string) {
-    return db.query.products.findFirst({
-      where: and(eq(products.id, id), eq(products.storeId, storeId)),
-      with: { category: true },
-    });
+  async getById(storeId: string, id: string): Promise<Product | null> {
+    const rows = await db
+      .select()
+      .from(products)
+      .where(and(eq(products.id, id), eq(products.storeId, storeId)))
+      .limit(1);
+    return rows[0] ?? null;
   },
 
-  async create(
-    storeId: string,
-    data: Omit<ProductInsert, 'storeId'>,
-  ): Promise<Product> {
+  async create(storeId: string, data: Omit<ProductInsert, 'storeId'>): Promise<Product> {
     const [row] = await db.insert(products).values({ ...data, storeId }).returning();
     return row;
   },

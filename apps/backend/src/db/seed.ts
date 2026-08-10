@@ -1,94 +1,76 @@
-import { sql, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db, client } from './index';
 import { stores, products } from './schema';
 
 /**
- * Idempotent setup + seed, run on every container start (after `drizzle-kit push`):
- *   1. ensure an auto-updating `updated_at` trigger on every table,
- *   2. ensure the default store exists,
- *   3. insert sample products the first time around.
- *
- * Run manually with: `npm run db:seed`.
+ * Idempotent seed: ensures one sample store exists and inserts a few test
+ * products the first time around. Run on every container start (after the
+ * migration/push) and manually with: `npm run db:seed`.
  */
 
-// Tables that own an `updated_at` column and should auto-update it on change.
-const TABLES_WITH_UPDATED_AT = ['stores', 'users', 'categories', 'products'];
-
-async function ensureUpdatedAtTriggers() {
-  await db.execute(sql`
-    CREATE OR REPLACE FUNCTION set_updated_at()
-    RETURNS TRIGGER AS $$
-    BEGIN
-      NEW.updated_at = NOW();
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql;
-  `);
-
-  for (const table of TABLES_WITH_UPDATED_AT) {
-    // Table names are hardcoded constants -> safe to interpolate via sql.raw.
-    await db.execute(
-      sql.raw(
-        `CREATE OR REPLACE TRIGGER ${table}_updated_at
-         BEFORE UPDATE ON ${table}
-         FOR EACH ROW EXECUTE FUNCTION set_updated_at();`,
-      ),
-    );
-  }
-}
-
 async function main() {
-  const slug = process.env.STORE_DEFAULT_SLUG ?? 'default';
+  const subdomain = process.env.STORE_DEFAULT_SUBDOMAIN ?? 'default';
 
-  await ensureUpdatedAtTriggers();
-
-  const existing = await db.select().from(stores).where(eq(stores.slug, slug)).limit(1);
+  // 1. Ensure the sample store exists.
+  const existing = await db.select().from(stores).where(eq(stores.subdomain, subdomain)).limit(1);
   let store = existing[0];
   if (!store) {
     const [created] = await db
       .insert(stores)
-      .values({
-        slug,
-        name: 'Default Store',
-        status: 'ACTIVE',
-        plan: 'FREE',
-        defaultCurrency: 'USD',
-      })
+      .values({ subdomain, name: 'Acme Store' })
       .returning();
     store = created;
   }
 
-  const [countRow] = await db
-    .select({ count: sql<number>`count(*)::int` })
+  // 2. Seed a few test products if the store has none yet.
+  const [anyProduct] = await db
+    .select({ id: products.id })
     .from(products)
-    .where(eq(products.storeId, store.id));
+    .where(eq(products.storeId, store.id))
+    .limit(1);
 
-  if ((countRow?.count ?? 0) === 0) {
+  if (!anyProduct) {
     await db.insert(products).values([
       {
         storeId: store.id,
-        name: 'Acme Wireless Headphones',
-        description: 'A great-sounding pair of wireless headphones to get you started.',
+        title: 'Acme Wireless Headphones',
+        description: 'Over-ear wireless headphones with active noise cancellation.',
         price: '129.00',
-        currency: 'USD',
-        sku: 'ACME-WH-001',
+        imageUrl: 'https://picsum.photos/seed/headphones/600/400',
         stock: 42,
-        active: true,
+        category: 'Electronics',
       },
       {
         storeId: store.id,
-        name: 'Shopiva Tote Bag',
-        description: 'Carry everything. Sustainable cotton tote.',
+        title: 'Shopiva Tote Bag',
+        description: 'Durable organic cotton tote — carries everything.',
         price: '19.50',
-        currency: 'USD',
-        sku: 'SHOP-TOTE',
+        imageUrl: 'https://picsum.photos/seed/tote/600/400',
         stock: 200,
-        active: true,
+        category: 'Accessories',
+      },
+      {
+        storeId: store.id,
+        title: 'Ceramic Coffee Mug',
+        description: 'Handmade 12oz ceramic mug, dishwasher safe.',
+        price: '12.00',
+        imageUrl: 'https://picsum.photos/seed/mug/600/400',
+        stock: 75,
+        category: 'Home',
+      },
+      {
+        storeId: store.id,
+        title: 'Mechanical Keyboard',
+        description: 'Hot-swappable 75% mechanical keyboard with PBT keycaps.',
+        price: '89.99',
+        imageUrl: 'https://picsum.photos/seed/keyboard/600/400',
+        stock: 15,
+        category: 'Electronics',
       },
     ]);
   }
 
-  console.log(`[seed] store ready: slug=${store.slug} id=${store.id}`);
+  console.log(`[seed] store ready: subdomain=${store.subdomain} id=${store.id}`);
 }
 
 main()
