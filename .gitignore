@@ -1,0 +1,69 @@
+# ─── Dependencies ─────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.*
+
+# ─── Build output ─────────────────────────────────────────────
+# TypeScript / backend
+dist/
+build/
+*.tsbuildinfo
+
+# Next.js (frontend)
+.next/
+out/
+
+# Misc caches
+.cache/
+.turbo/
+.parcel-cache/
+.eslintcache
+
+# ─── Environment variables ────────────────────────────────────
+# Keep real env files local; only commit the .example templates.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# ─── Logs ─────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── Testing / coverage ───────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ─── IDE / editor ─────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS files ─────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ─── Docker ───────────────────────────────────────────────────
+# Local override file is developer-specific; don't commit it.
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# ─── Drizzle / Prisma (intentionally NOT ignored) ─────────────
+# Migration files under apps/backend/drizzle/ ARE committed — they are the
+# production source of truth. Postgres/Redis data lives in named Docker
+# volumes, so there is nothing here to ignore either.

@@ -1,0 +1,24 @@
+{
+  "name": "shopiva",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shopiva — a multi-tenant storefront-builder SaaS monorepo.",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "start": "docker compose up",
+    "dev": "docker compose up",
+    "up": "docker compose up -d",
+    "down": "docker compose down",
+    "build": "docker compose build",
+    "rebuild": "docker compose build --no-cache",
+    "logs": "docker compose logs -f backend frontend",
+    "ps": "docker compose ps",
+    "db:push": "docker compose exec backend npm run db:push",
+    "db:studio": "docker compose exec backend npm run db:studio"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

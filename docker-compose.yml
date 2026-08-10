@@ -1,0 +1,88 @@
+# Development stack for Shopiva.
+# Bring everything up:   npm start        (or: docker compose up)
+# Detached:              npm run up       (or: docker compose up -d)
+#
+# The backend container auto-runs `drizzle-kit push` and the seed script on
+# every start (see apps/backend/docker-entrypoint.sh), so the schema and a
+# default store are ready by the time the API serves.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: shopiva-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shopiva}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shopiva}
+      POSTGRES_DB: ${POSTGRES_DB:-shopiva}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shopiva} -d ${POSTGRES_DB:-shopiva}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: shopiva-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./apps/backend
+    container_name: shopiva-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: "4000"
+      # Hostname `postgres` resolves to the postgres service on the compose network.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-shopiva}:${POSTGRES_PASSWORD:-shopiva}@postgres:5432/${POSTGRES_DB:-shopiva}?schema=public
+      REDIS_URL: redis://redis:6379
+      STORE_DEFAULT_SLUG: ${STORE_DEFAULT_SLUG:-default}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${BACKEND_PORT:-4000}:4000"
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ./apps/frontend
+    container_name: shopiva-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      # Server-side (SSR) base URL — resolved inside the compose network.
+      API_URL: http://backend:4000
+      # Browser-side base URL — resolved from the user's browser.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  postgres_data:
+  redis_data:
