@@ -18,6 +18,23 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()).data as T;
 }
 
+/** Public storefront POST (tenant-scoped, e.g. checkout). */
+export async function apiStorePost<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-store-subdomain': DEFAULT_SUBDOMAIN },
+    body: JSON.stringify(body),
+  });
+  let payload: { data?: T; error?: { message?: string } } | null = null;
+  try {
+    payload = await res.json();
+  } catch {
+    payload = null;
+  }
+  if (!res.ok) throw new Error(payload?.error?.message ?? `Request failed (${res.status})`);
+  return payload!.data as T;
+}
+
 /** Authenticated JSON request for the auth + admin endpoints. */
 export async function apiFetch<T>(
   path: string,

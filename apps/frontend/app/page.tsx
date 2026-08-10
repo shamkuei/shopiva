@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ProductCard } from '@/components/ProductCard';
+import { CartBadge } from '@/components/CartBadge';
 import type { Product, Store } from '@/lib/types';
 
 // Server-side base URL. Inside Docker this resolves to the backend service;
@@ -35,12 +36,12 @@ export default async function Home() {
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">
             {store ? `${store.subdomain}.shopiva.app` : 'Shopiva'}
           </p>
-          <Link
-            href="/admin"
-            className="text-sm font-semibold text-brand hover:underline"
-          >
-            Admin →
-          </Link>
+          <div className="flex items-center gap-3">
+            <CartBadge />
+            <Link href="/admin" className="text-sm font-semibold text-brand hover:underline">
+              Admin →
+            </Link>
+          </div>
         </div>
         <h1 className="mt-1 text-4xl font-bold tracking-tight text-slate-900">
           {store ? store.name : 'Your storefront'}

@@ -1,14 +1,32 @@
+'use client';
+
+import { useState } from 'react';
 import type { Product } from '@/lib/types';
-import { formatPrice } from '@/lib/api';
+import { formatPrice, resolveImageUrl } from '@/lib/api';
+import { useCart } from '@/lib/cartStore';
 
 export function ProductCard({ product }: { product: Product }) {
+  const add = useCart((s) => s.add);
+  const [justAdded, setJustAdded] = useState(false);
+
+  function onAdd() {
+    add({
+      productId: product.id,
+      title: product.title,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    });
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1200);
+  }
+
   return (
     <article className="flex flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
       <div className="mb-4 flex h-40 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 to-slate-100">
         {product.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={product.imageUrl}
+            src={resolveImageUrl(product.imageUrl) ?? ''}
             alt={product.title}
             className="h-full w-full object-cover"
           />
@@ -36,6 +54,14 @@ export function ProductCard({ product }: { product: Product }) {
           {product.stock > 0 ? `${product.stock} in stock` : 'Sold out'}
         </span>
       </div>
+
+      <button
+        onClick={onAdd}
+        disabled={product.stock <= 0}
+        className="mt-4 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {product.stock <= 0 ? 'Sold out' : justAdded ? '✓ Added to cart' : 'Add to cart'}
+      </button>
     </article>
   );
 }
