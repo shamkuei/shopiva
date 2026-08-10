@@ -1,0 +1,28 @@
+# Shopiva edge proxy — wildcard storefront subdomains + apex (admin/auth/marketing).
+#
+# The Next.js app reads the subdomain from the Host header in middleware, so the
+# proxy MUST preserve the original Host (Caddy does this by default).
+#
+# TLS notes:
+#   - apex + www get automatic HTTPS via HTTP-01.
+#   - the wildcard (*.yourdomain.com) requires a DNS-01 ACME challenge, which
+#     needs a DNS-provider plugin OR a pre-issued wildcard cert. See:
+#     https://caddyserver.com/docs/automatic-https#dns-challenge
+
+{
+	email admin@yourdomain.com
+	# For wildcard DNS-01, add your provider plugin + token here, e.g.:
+	# acme_dns cloudflare {$CLOUDFLARE_API_TOKEN}
+}
+
+# Apex + www -> marketing site, /login, /register, /admin
+yourdomain.com, www.yourdomain.com {
+	reverse_proxy frontend:3000
+}
+
+# *.yourdomain.com -> storefront subdomains (Next middleware resolves the store)
+*.yourdomain.com {
+	# Either configure DNS-01 above, or supply a wildcard cert:
+	# tls /etc/certs/shopiva/fullchain.pem /etc/certs/shopiva/privkey.pem
+	reverse_proxy frontend:3000
+}

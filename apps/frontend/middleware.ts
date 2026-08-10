@@ -1,38 +1,74 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Lightweight route gate based on the presence of the `access_token` cookie.
+ * Subdomain-based store routing + auth gating.
  *
- * httpOnly cookies are not readable by client JS, but they ARE readable
- * server-side — including here in the Next.js middleware (edge) layer — so we
- * can redirect before the page even renders. The authoritative auth check still
- * happens at the API (the cookie may be expired); this just avoids flashes of
- * the protected/logged-in pages.
+ * The store is chosen by the Host header:
+ *   acme.yourdomain.com  -> store "acme"
+ *   yourdomain.com       -> apex (marketing, login, register, admin — no store)
+ *
+ * For local dev, *.localhost works the same (acme.localhost:3000 -> "acme"),
+ * and `?store=<subdomain>` overrides the Host for convenience.
+ *
+ * The resolved subdomain is passed to server components via the
+ * `x-store-subdomain` request header, and mirrored into a (non-httpOnly)
+ * `store-subdomain` cookie so client components can read it too.
  */
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const hasAccessToken = Boolean(request.cookies.get('access_token')?.value);
 
-  // Not logged in -> bounce off protected admin pages.
+const ROOT_DOMAIN = process.env.ROOT_DOMAIN ?? 'localhost';
+
+function extractSubdomain(host: string): string | null {
+  const hostname = host.split(':')[0].toLowerCase();
+  if (!hostname || hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`) {
+    return null;
+  }
+  const suffix = `.${ROOT_DOMAIN}`;
+  return hostname.endsWith(suffix) ? hostname.slice(0, -suffix.length) : null;
+}
+
+export function middleware(req: NextRequest) {
+  const { pathname, searchParams } = req.nextUrl;
+  const hasAccessToken = Boolean(req.cookies.get('access_token')?.value);
+
+  // ── Auth gating (unchanged) ───────────────────────────────────────
   if (pathname.startsWith('/admin') && !hasAccessToken) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.search = '';
-    return NextResponse.redirect(url);
+    return redirect(req, '/login');
   }
-
-  // Already logged in -> skip the auth pages.
   if ((pathname === '/login' || pathname === '/register') && hasAccessToken) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/admin';
-    url.search = '';
-    return NextResponse.redirect(url);
+    return redirect(req, '/admin');
   }
 
-  return NextResponse.next();
+  // ── Subdomain resolution ──────────────────────────────────────────
+  const subdomain = searchParams.get('store') ?? extractSubdomain(req.headers.get('host') ?? '');
+
+  const requestHeaders = new Headers(req.headers);
+  if (subdomain) {
+    requestHeaders.set('x-store-subdomain', subdomain);
+  } else {
+    requestHeaders.delete('x-store-subdomain');
+  }
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+
+  const current = req.cookies.get('store-subdomain')?.value;
+  if (subdomain) {
+    if (current !== subdomain) {
+      res.cookies.set('store-subdomain', subdomain, { path: '/', sameSite: 'lax' });
+    }
+  } else if (current) {
+    res.cookies.delete('store-subdomain');
+  }
+
+  return res;
+}
+
+function redirect(req: NextRequest, pathname: string) {
+  const url = req.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = '';
+  return NextResponse.redirect(url);
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/register'],
+  // Run on all pages (subdomain + auth), skip Next internals and the API.
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };

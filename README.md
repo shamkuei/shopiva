@@ -117,15 +117,30 @@ shopiva/
 ## How multi-tenancy works
 
 - The **`stores`** table (`apps/backend/src/db/schema.ts`) is the tenant. Every
-  `users`, `categories`, and `products` row belongs to a store via `storeId`.
+  `users`, `products`, `orders`, … row belongs to a store via `storeId`.
 - The **tenant middleware** (`apps/backend/src/middlewares/tenantMiddleware.ts`)
-  resolves the current store per request — from the `x-store-slug` header, or
-  the configured default — and attaches it to `req.store`.
+  resolves the current store per request from the `x-store-subdomain` header and
+  attaches it to `req.store`.
 - The **services layer** always scopes queries by `req.store.id`, so a request
   for one tenant can never touch another tenant's data.
 
-To add a second store later, create one (`POST` is straightforward to add), then
-send its slug as the `x-store-slug` header; the rest works unchanged.
+## Subdomain routing
+
+Each store lives on its own subdomain (`acme.yourdomain.com`). The **Next.js
+middleware** (`apps/frontend/middleware.ts`) reads the subdomain from the `Host`
+header and forwards it to the app: as the `x-store-subdomain` request header
+(server components) and a `store-subdomain` cookie (client components), which the
+API helpers then send to the backend.
+
+- Apex / www (`yourdomain.com`) → marketing landing + `/login`, `/register`, `/admin`.
+- `*.yourdomain.com` → that store's storefront.
+- An **unknown subdomain** (no matching store) → the 404 page (`app/not-found.tsx`).
+
+`ROOT_DOMAIN` (frontend env) tells the middleware what the apex is — use
+`localhost` for dev (`*.localhost` works), or your domain in production. In dev
+you can also append `?store=acme` to override. Put a wildcard reverse proxy in
+front in production — see [`deploy/`](deploy/) for a Caddyfile and an Nginx
+config (both preserve the `Host` header so subdomains route correctly).
 
 ---
 
