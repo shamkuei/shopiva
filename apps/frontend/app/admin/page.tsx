@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
+import { AdminNav } from '@/components/admin/AdminNav';
 import type { User, Store } from '@/lib/types';
 
 export default function AdminPage() {
@@ -47,6 +48,7 @@ export default function AdminPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
+      <AdminNav />
       <header className="mb-8 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">Admin panel</p>

@@ -38,13 +38,28 @@ export type CartItem = {
   quantity: number;
 };
 
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'shipped' | 'cancelled';
+
 export type Order = {
   id: string;
   storeId: string;
-  status: 'pending' | 'paid' | 'shipped' | 'cancelled';
+  status: OrderStatus;
   totalAmount: string;
   customerName: string;
   customerPhone: string | null;
   customerAddress: string | null;
+  authority?: string | null;
+  refId?: string | null;
   createdAt: string;
 };
+
+export type OrderItem = {
+  id: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+  unitPrice: string;
+  productTitle?: string;
+};
+
+export type OrderDetail = Order & { items: OrderItem[] };

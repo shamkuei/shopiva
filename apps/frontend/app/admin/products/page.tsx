@@ -6,6 +6,7 @@ import { apiFetch, formatPrice, resolveImageUrl } from '@/lib/api';
 import type { Product } from '@/lib/types';
 import { ProductFormModal } from '@/components/admin/ProductFormModal';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { AdminNav } from '@/components/admin/AdminNav';
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -57,6 +58,7 @@ export default function AdminProductsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
+      <AdminNav />
       <header className="mb-8 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">Admin panel</p>

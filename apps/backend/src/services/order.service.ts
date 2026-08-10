@@ -1,7 +1,16 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { orders, orderItems, products, type Order } from '../db/schema';
 import { ApiError } from '../utils/ApiError';
+
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'shipped' | 'cancelled';
+export const ORDER_STATUSES: OrderStatus[] = [
+  'pending',
+  'paid',
+  'failed',
+  'shipped',
+  'cancelled',
+];
 
 export interface OrderItemInput {
   productId: string;
@@ -12,6 +21,17 @@ export interface CreateOrderInput {
   items: OrderItemInput[];
   customer: { name: string; phone?: string | null; address?: string | null };
 }
+
+export type OrderDetail = Order & {
+  items: Array<{
+    id: string;
+    orderId: string;
+    productId: string;
+    quantity: number;
+    unitPrice: string;
+    productTitle: string;
+  }>;
+};
 
 export const orderService = {
   /**
@@ -124,5 +144,61 @@ export const orderService = {
 
   async markFailed(orderId: string): Promise<void> {
     await db.update(orders).set({ status: 'failed' }).where(eq(orders.id, orderId));
+  },
+
+  // ── Admin (store-scoped) ──────────────────────────────────────
+
+  /** List a store's orders, optionally filtered by status (newest first). */
+  listForAdmin(storeId: string, status?: OrderStatus): Promise<Order[]> {
+    return db
+      .select()
+      .from(orders)
+      .where(
+        status ? and(eq(orders.storeId, storeId), eq(orders.status, status)) : eq(orders.storeId, storeId),
+      )
+      .orderBy(desc(orders.createdAt));
+  },
+
+  /** Order + line items (with product titles) for the detail page. */
+  async getDetail(storeId: string, orderId: string): Promise<OrderDetail | null> {
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, orderId), eq(orders.storeId, storeId)))
+      .limit(1);
+    if (!order) return null;
+
+    const items = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productId: orderItems.productId,
+        quantity: orderItems.quantity,
+        unitPrice: orderItems.unitPrice,
+        productTitle: products.title,
+      })
+      .from(orderItems)
+      .innerJoin(products, eq(orderItems.productId, products.id))
+      .where(eq(orderItems.orderId, orderId));
+
+    return { ...order, items };
+  },
+
+  async countPending(storeId: string): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(orders)
+      .where(and(eq(orders.storeId, storeId), eq(orders.status, 'pending')));
+    return row?.count ?? 0;
+  },
+
+  /** Change an order's status. Scoped to the store; foreign ids → null. */
+  async updateStatus(storeId: string, orderId: string, status: OrderStatus): Promise<Order | null> {
+    const [row] = await db
+      .update(orders)
+      .set({ status })
+      .where(and(eq(orders.id, orderId), eq(orders.storeId, storeId)))
+      .returning();
+    return row ?? null;
   },
 };
