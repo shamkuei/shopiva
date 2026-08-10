@@ -86,6 +86,19 @@ export default function AdminPage() {
         </dl>
       </section>
 
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 className="text-lg font-semibold text-slate-900">Catalog</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Add, edit, and remove the products in your store.
+        </p>
+        <Link
+          href="/admin/products"
+          className="mt-3 inline-block rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark"
+        >
+          Manage products →
+        </Link>
+      </section>
+
       <p className="mt-6 text-sm text-slate-500">
         <Link href="/" className="font-semibold text-brand hover:underline">
           ← Back to storefront

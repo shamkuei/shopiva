@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import path from 'node:path';
 import { env } from './config/env';
 import routes from './routes';
 import healthRoute from './routes/health.route';
@@ -27,6 +28,9 @@ export function createApp() {
   app.use(express.json());
   app.use(cookieParser());
   app.use(morgan(env.isProd ? 'combined' : 'dev'));
+
+  // Serve uploaded product images from local disk.
+  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
   // Root.
   app.get('/', (_req: Request, res: Response) => {

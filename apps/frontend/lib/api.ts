@@ -30,6 +30,9 @@ export async function apiFetch<T>(
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
 
+  // 204 No Content (e.g. DELETE) has no body.
+  if (res.status === 204) return undefined as T;
+
   let payload: { data?: T; error?: { message?: string } } | null = null;
   try {
     payload = await res.json();
@@ -41,6 +44,32 @@ export async function apiFetch<T>(
     throw new Error(payload?.error?.message ?? `Request failed (${res.status})`);
   }
   return payload!.data as T;
+}
+
+/** Multipart upload (e.g. product image). Returns the parsed `data`. */
+export async function apiUpload<T>(path: string, file: File): Promise<T> {
+  const form = new FormData();
+  form.append('image', file);
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+
+  let payload: { data?: T; error?: { message?: string } } | null = null;
+  try {
+    payload = await res.json();
+  } catch {
+    payload = null;
+  }
+  if (!res.ok) throw new Error(payload?.error?.message ?? `Upload failed (${res.status})`);
+  return payload!.data as T;
+}
+
+/** Resolve an image URL: absolute (https://…) stays as-is, paths are prefixed. */
+export function resolveImageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return /^https?:\/\//i.test(url) ? url : `${API_URL}${url}`;
 }
 
 export function formatPrice(price: string, currency = 'USD'): string {

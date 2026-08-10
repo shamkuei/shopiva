@@ -67,3 +67,7 @@ docker-compose.override.yaml
 # Migration files under apps/backend/drizzle/ ARE committed — they are the
 # production source of truth. Postgres/Redis data lives in named Docker
 # volumes, so there is nothing here to ignore either.
+
+# ─── Uploaded files (runtime data) ────────────────────────────
+apps/backend/uploads/*
+!apps/backend/uploads/.gitkeep
