@@ -32,7 +32,7 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
       const { url } = await apiUpload<{ url: string }>('/api/admin/products/image', file);
       setImageUrl(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'بارگذاری تصویر ناموفق بود.');
     } finally {
       setUploading(false);
     }
@@ -41,7 +41,7 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!title.trim() || price === '') {
-      setError('Title and price are required.');
+      setError('عنوان و قیمت الزامی است.');
       return;
     }
     setSaving(true);
@@ -62,7 +62,7 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
       }
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed');
+      setError(err instanceof Error ? err.message : 'ذخیره ناموفق بود.');
     } finally {
       setSaving(false);
     }
@@ -74,17 +74,17 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-xl font-bold text-slate-900">{isEdit ? 'Edit product' : 'Add product'}</h2>
+        <h2 className="text-xl font-bold text-slate-900">{isEdit ? 'ویرایش محصول' : 'افزودن محصول'}</h2>
 
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Title</span>
+            <span className="text-sm font-medium text-slate-700">عنوان</span>
             <input required value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
           </label>
 
           <div className="grid grid-cols-2 gap-4">
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Price</span>
+              <span className="text-sm font-medium text-slate-700">قیمت</span>
               <input
                 required
                 type="number"
@@ -96,7 +96,7 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
               />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-slate-700">Stock</span>
+              <span className="text-sm font-medium text-slate-700">موجودی</span>
               <input
                 type="number"
                 min="0"
@@ -108,12 +108,12 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
           </div>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Category</span>
+            <span className="text-sm font-medium text-slate-700">دسته‌بندی</span>
             <input value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls} />
           </label>
 
           <label className="block">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">توضیحات</span>
             <textarea
               rows={3}
               value={description}
@@ -123,7 +123,7 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
           </label>
 
           <div className="block">
-            <span className="text-sm font-medium text-slate-700">Image</span>
+            <span className="text-sm font-medium text-slate-700">تصویر</span>
             <div className="mt-1 flex items-center gap-4">
               <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                 {resolveImageUrl(imageUrl) ? (
@@ -143,39 +143,39 @@ export function ProductFormModal({ product, onClose, onSaved }: Props) {
                   accept="image/*"
                   onChange={onUpload}
                   disabled={uploading}
-                  className="text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-white"
+                  className="text-sm text-slate-600 file:ms-3 file:rounded-lg file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-white"
                 />
                 {imageUrl && (
                   <button
                     type="button"
                     onClick={() => setImageUrl(null)}
-                    className="text-left text-xs text-slate-400 hover:underline"
+                    className="text-start text-xs text-slate-400 hover:underline"
                   >
-                    Remove image
+                    حذف تصویر
                   </button>
                 )}
-                {uploading && <span className="text-xs text-slate-400">Uploading…</span>}
+                {uploading && <span className="text-xs text-slate-400">در حال بارگذاری…</span>}
               </div>
             </div>
           </div>
 
           {error && <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-start gap-2 pt-2">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
               className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
             >
-              Cancel
+              انصراف
             </button>
             <button
               type="submit"
               disabled={saving || uploading}
               className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark disabled:opacity-60"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'در حال ذخیره…' : 'ذخیره'}
             </button>
           </div>
         </form>

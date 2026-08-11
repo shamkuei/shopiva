@@ -18,10 +18,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await apiFetch('/api/auth/login', { method: 'POST', body: { email, password } });
-      // httpOnly auth cookie is now set by the browser -> go to the admin panel.
+      // کوکی احراز هویت httpOnly توسط مرورگر تنظیم شد -> رفتن به پنل مدیریت.
       router.replace('/admin');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+    } catch {
+      setError('ایمیل یا رمز عبور نادرست است.');
     } finally {
       setLoading(false);
     }
@@ -29,12 +29,12 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-6 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900">Log in</h1>
-      <p className="mt-1 text-slate-500">Sign in to your store admin panel.</p>
+      <h1 className="text-3xl font-bold tracking-tight text-slate-900">ورود</h1>
+      <p className="mt-1 text-slate-500">برای ورود به پنل مدیریت فروشگاه خود، وارد شوید.</p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Email</span>
+          <span className="text-sm font-medium text-slate-700">ایمیل</span>
           <input
             type="email"
             required
@@ -44,7 +44,7 @@ export default function LoginPage() {
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Password</span>
+          <span className="text-sm font-medium text-slate-700">رمز عبور</span>
           <input
             type="password"
             required
@@ -63,14 +63,14 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full rounded-lg bg-brand px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-brand-dark disabled:opacity-60"
         >
-          {loading ? 'Logging in…' : 'Log in'}
+          {loading ? 'در حال ورود…' : 'ورود'}
         </button>
       </form>
 
       <p className="mt-6 text-sm text-slate-500">
-        No store yet?{' '}
+        هنوز فروشگاه نساخته‌اید؟{' '}
         <Link href="/register" className="font-semibold text-brand hover:underline">
-          Create one
+          ساخت فروشگاه
         </Link>
       </p>
     </div>

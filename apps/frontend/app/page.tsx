@@ -52,26 +52,26 @@ export default async function Home() {
           <div className="flex items-center gap-3">
             <CartBadge />
             <Link href="/admin" className="text-sm font-semibold text-brand hover:underline">
-              Admin →
+              پنل مدیریت
             </Link>
           </div>
         </div>
         <h1 className="mt-1 text-4xl font-bold tracking-tight text-slate-900">
-          {store ? store.name : 'Your storefront'}
+          {store ? store.name : 'فروشگاه شما'}
         </h1>
         <p className="mt-2 text-slate-500">
           {store
-            ? `Welcome to ${store.name}. Here's what's on the shelves.`
-            : 'The storefront will appear here once the backend is reachable.'}
+            ? `به ${store.name} خوش آمدید. این‌ها محصولات موجود هستند.`
+            : 'فروشگاه پس از اتصال به سرور نمایش داده می‌شود.'}
         </p>
       </header>
 
       {backendDown && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-800">
-          <p className="font-semibold">Backend not reachable</p>
+          <p className="font-semibold">ارتباط با سرور برقرار نشد</p>
           <p className="mt-1 text-sm">
-            The frontend couldn&apos;t reach <code className="font-mono">{API_URL}</code>. If you just
-            started the stack, the backend may still be booting &mdash; refresh in a few seconds.
+            امکان اتصال به <code className="font-mono">{API_URL}</code> وجود ندارد. اگر تازه استارت
+            زده‌اید، ممکن است سرور در حال راه‌اندازی باشد — چند ثانیه بعد دوباره تلاش کنید.
           </p>
         </div>
       )}
@@ -85,7 +85,9 @@ export default async function Home() {
       )}
 
       {!backendDown && products && products.length === 0 && (
-        <p className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-500">No products yet.</p>
+        <p className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-500">
+          هنوز محصولی ثبت نشده است.
+        </p>
       )}
     </div>
   );
@@ -94,26 +96,26 @@ export default async function Home() {
 function Landing() {
   return (
     <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-      <p className="text-sm font-semibold uppercase tracking-wider text-brand">Shopiva</p>
+      <p className="text-sm font-semibold uppercase tracking-wider text-brand">شاپیوا</p>
       <h1 className="mt-2 text-5xl font-bold tracking-tight text-slate-900">
-        Launch your own storefront in minutes
+        فروشگاه آنلاین خود را در چند دقیقه راه‌اندازی کنید
       </h1>
       <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
-        Shopiva is a multi-tenant storefront builder. Each store lives on its own
-        subdomain &mdash; create yours and start selling.
+        شاپیوا یک پلتفرم چندفروشگاهی برای ساخت فروشگاه آنلاین است. هر فروشگاه زیردامنه‌ی اختصاصی
+        خود را دارد — همین حالا فروشگاه خود را بسازید و فروش را شروع کنید.
       </p>
       <div className="mt-8 flex items-center justify-center gap-3">
         <Link
           href="/register"
           className="rounded-lg bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-dark"
         >
-          Create your store
+          ساخت فروشگاه
         </Link>
         <Link
           href="/login"
           className="rounded-lg border border-slate-300 px-6 py-3 font-medium text-slate-700 transition hover:bg-slate-50"
         >
-          Log in
+          ورود
         </Link>
       </div>
     </div>

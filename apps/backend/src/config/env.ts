@@ -42,4 +42,9 @@ export const env = {
     process.env.ZARINPAL_CALLBACK_URL ?? 'http://localhost:4000/api/payments/callback',
   // Public frontend URL (used to redirect to the result page after verifying).
   webUrl: process.env.WEB_URL ?? 'http://localhost:3000',
+
+  // Deployment / multi-tenant
+  // Apex domain — used for CORS (allow *.ROOT_DOMAIN) and to parse store
+  // subdomains in the Caddy on-demand-TLS "ask" endpoint. Empty in dev.
+  rootDomain: process.env.ROOT_DOMAIN ?? '',
 } as const;

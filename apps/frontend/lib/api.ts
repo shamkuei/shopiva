@@ -100,12 +100,8 @@ export function resolveImageUrl(url: string | null | undefined): string | null {
   return /^https?:\/\//i.test(url) ? url : `${API_URL}${url}`;
 }
 
-export function formatPrice(price: string, currency = 'USD'): string {
+export function formatPrice(price: string): string {
   const amount = Number(price);
   if (Number.isNaN(amount)) return price;
-  try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${currency}`;
-  }
+  return `${amount.toLocaleString('fa-IR')} تومان`;
 }

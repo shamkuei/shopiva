@@ -7,6 +7,9 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Vazirmatn', 'system-ui', 'Tahoma', 'sans-serif'],
+      },
       colors: {
         brand: {
           DEFAULT: '#4f46e5',

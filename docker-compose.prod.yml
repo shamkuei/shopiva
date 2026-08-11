@@ -1,0 +1,104 @@
+# Production deployment for Shopiva.
+#
+#   cp .env.example .env        # fill in real secrets + your domain
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Only Caddy is exposed (80/443). Postgres/Redis/backend/frontend are internal.
+# Backend + frontend build from their multi-stage Dockerfiles' `production`
+# target (no source bind mounts, non-root runtime users).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./apps/backend
+      target: production
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      STORE_DEFAULT_SUBDOMAIN: ${STORE_DEFAULT_SUBDOMAIN:-default}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      ROOT_DOMAIN: ${ROOT_DOMAIN}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      COOKIE_SECURE: "true"
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID}
+      ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-false}
+      ZARINPAL_CALLBACK_URL: ${ZARINPAL_CALLBACK_URL}
+      WEB_URL: ${WEB_URL}
+      SEED_ON_BOOT: ${SEED_ON_BOOT:-false}
+    volumes:
+      - backend_uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      target: production
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_ROOT_DOMAIN: ${NEXT_PUBLIC_ROOT_DOMAIN}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Server-side (SSR) requests reach the backend over the internal network.
+      API_URL: http://backend:4000
+      ROOT_DOMAIN: ${ROOT_DOMAIN}
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      ROOT_DOMAIN: ${ROOT_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@${ROOT_DOMAIN}}
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_uploads:
+  caddy_data:
+  caddy_config:

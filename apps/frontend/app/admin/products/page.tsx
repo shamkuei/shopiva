@@ -23,7 +23,7 @@ export default function AdminProductsPage() {
       setProducts(await apiFetch<Product[]>('/api/admin/products'));
       setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load products');
+      setError(err instanceof Error ? err.message : 'بارگذاری محصولات ناموفق بود.');
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export default function AdminProductsPage() {
       setDeleting(null);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(err instanceof Error ? err.message : 'حذف ناموفق بود.');
     } finally {
       setDeleteBusy(false);
     }
@@ -59,20 +59,21 @@ export default function AdminProductsPage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
       <AdminNav />
-      <header className="mb-8 flex items-center justify-between">
+
+      <header className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand">Admin panel</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">Products</h1>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand">پنل مدیریت</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">محصولات</h1>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/admin" className="text-sm font-medium text-slate-500 hover:underline">
-            ← Dashboard
+            ← داشبورد
           </Link>
           <button
             onClick={openCreate}
             className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-dark"
           >
-            + Add product
+            + افزودن محصول
           </button>
         </div>
       </header>
@@ -82,28 +83,28 @@ export default function AdminProductsPage() {
       )}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-right text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3">Product</th>
-              <th className="px-4 py-3">Price</th>
-              <th className="px-4 py-3">Stock</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3">محصول</th>
+              <th className="px-4 py-3">قیمت</th>
+              <th className="px-4 py-3">موجودی</th>
+              <th className="px-4 py-3">دسته‌بندی</th>
+              <th className="px-4 py-3 text-start">عملیات</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                  Loading…
+                  در حال بارگذاری…
                 </td>
               </tr>
             )}
             {!loading && products.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
-                  No products yet. Click <span className="font-medium">Add product</span> to create one.
+                  هنوز محصولی ثبت نشده است. روی «افزودن محصول» بزنید.
                 </td>
               </tr>
             )}
@@ -127,20 +128,20 @@ export default function AdminProductsPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3 text-slate-700">{formatPrice(p.price)}</td>
-                <td className="px-4 py-3 text-slate-700">{p.stock}</td>
+                <td className="px-4 py-3 text-slate-700">{p.stock.toLocaleString('fa-IR')}</td>
                 <td className="px-4 py-3 text-slate-500">{p.category ?? '—'}</td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3">
                   <button
                     onClick={() => openEdit(p)}
                     className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    Edit
+                    ویرایش
                   </button>
                   <button
                     onClick={() => setDeleting(p)}
-                    className="ml-2 rounded-md border border-rose-200 px-3 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                    className="ms-2 rounded-md border border-rose-200 px-3 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
                   >
-                    Delete
+                    حذف
                   </button>
                 </td>
               </tr>

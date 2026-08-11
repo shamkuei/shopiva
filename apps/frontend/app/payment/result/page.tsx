@@ -25,20 +25,20 @@ export default async function PaymentResultPage({
       </div>
 
       <h1 className="mt-4 text-3xl font-bold tracking-tight text-slate-900">
-        {paid ? 'Payment successful' : 'Payment failed'}
+        {paid ? 'پرداخت موفق' : 'پرداخت ناموفق'}
       </h1>
       <p className="mt-2 text-slate-500">
         {paid
-          ? 'Thank you! Your order has been confirmed and is now being prepared.'
-          : 'Your payment was cancelled or could not be verified. No charge was made — you can try again.'}
+          ? 'سفارش شما با موفقیت ثبت شد و در حال آماده‌سازی است.'
+          : 'پرداخت لغو شد یا تأیید نشد. مبلغی کسر نشده است — می‌توانید دوباره تلاش کنید.'}
       </p>
 
       {orderId && (
         <p className="mt-4 inline-block rounded-lg bg-slate-100 px-4 py-2 font-mono text-sm text-slate-600">
-          Order #{orderId}
+          سفارش #{orderId}
         </p>
       )}
-      {paid && ref && <p className="mt-2 text-sm text-slate-400">Reference: {ref}</p>}
+      {paid && ref && <p className="mt-2 text-sm text-slate-400">کد پیگیری: {ref}</p>}
 
       <div className="mt-8 flex items-center justify-center gap-3">
         {paid ? (
@@ -46,7 +46,7 @@ export default async function PaymentResultPage({
             href="/"
             className="rounded-lg bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-dark"
           >
-            Continue shopping
+            ادامه‌ی خرید
           </Link>
         ) : (
           <>
@@ -54,13 +54,13 @@ export default async function PaymentResultPage({
               href="/checkout"
               className="rounded-lg bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-dark"
             >
-              Try again
+              تلاش مجدد
             </Link>
             <Link
               href="/"
               className="rounded-lg border border-slate-300 px-6 py-3 font-medium text-slate-700 transition hover:bg-slate-50"
             >
-              Back to store
+              بازگشت به فروشگاه
             </Link>
           </>
         )}

@@ -14,15 +14,15 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-12">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900">Your cart</h1>
+      <h1 className="text-3xl font-bold tracking-tight text-slate-900">سبد خرید شما</h1>
 
       {!hydrated ? (
-        <p className="mt-6 text-slate-400">Loading…</p>
+        <p className="mt-6 text-slate-400">در حال بارگذاری…</p>
       ) : items.length === 0 ? (
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-8 text-center">
-          <p className="text-slate-500">Your cart is empty.</p>
+          <p className="text-slate-500">سبد خرید شما خالی است.</p>
           <Link href="/" className="mt-3 inline-block font-semibold text-brand hover:underline">
-            ← Browse products
+            مشاهده‌ی محصولات ←
           </Link>
         </div>
       ) : (
@@ -44,33 +44,35 @@ export default function CartPage() {
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-slate-800">{item.title}</p>
-                  <p className="text-sm text-slate-500">{formatPrice(item.price)} each</p>
+                  <p className="text-sm text-slate-500">{formatPrice(item.price)} هر عدد</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setQuantity(item.productId, item.quantity - 1)}
                     className="h-8 w-8 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50"
-                    aria-label="Decrease quantity"
+                    aria-label="کاهش تعداد"
                   >
                     −
                   </button>
-                  <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                  <span className="w-8 text-center text-sm font-medium">
+                    {item.quantity.toLocaleString('fa-IR')}
+                  </span>
                   <button
                     onClick={() => setQuantity(item.productId, item.quantity + 1)}
                     className="h-8 w-8 rounded-md border border-slate-300 text-slate-600 hover:bg-slate-50"
-                    aria-label="Increase quantity"
+                    aria-label="افزایش تعداد"
                   >
                     +
                   </button>
                 </div>
-                <div className="w-24 text-right font-semibold text-slate-800">
+                <div className="w-24 text-end font-semibold text-slate-800">
                   {formatPrice((Number(item.price) * item.quantity).toFixed(2))}
                 </div>
                 <button
                   onClick={() => remove(item.productId)}
-                  className="ml-2 text-xs text-rose-500 hover:underline"
+                  className="ms-2 text-xs text-rose-500 hover:underline"
                 >
-                  Remove
+                  حذف
                 </button>
               </li>
             ))}
@@ -78,20 +80,20 @@ export default function CartPage() {
 
           <div className="mt-6 flex items-center justify-between">
             <Link href="/" className="text-sm font-medium text-slate-500 hover:underline">
-              ← Continue shopping
+              ادامه‌ی خرید ←
             </Link>
-            <div className="text-right">
-              <p className="text-sm text-slate-500">Total</p>
+            <div className="text-end">
+              <p className="text-sm text-slate-500">مجموع</p>
               <p className="text-2xl font-bold text-slate-900">{formatPrice(total.toFixed(2))}</p>
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end">
+          <div className="mt-6 flex justify-start">
             <Link
               href="/checkout"
               className="rounded-lg bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-dark"
             >
-              Proceed to checkout →
+              ادامه به تسویه حساب ←
             </Link>
           </div>
         </div>

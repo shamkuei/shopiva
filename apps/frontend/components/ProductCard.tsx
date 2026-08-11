@@ -51,7 +51,7 @@ export function ProductCard({ product }: { product: Product }) {
             product.stock > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
           }`}
         >
-          {product.stock > 0 ? `${product.stock} in stock` : 'Sold out'}
+          {product.stock > 0 ? `${product.stock.toLocaleString('fa-IR')} موجود` : 'ناموجود'}
         </span>
       </div>
 
@@ -60,7 +60,7 @@ export function ProductCard({ product }: { product: Product }) {
         disabled={product.stock <= 0}
         className="mt-4 w-full rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {product.stock <= 0 ? 'Sold out' : justAdded ? '✓ Added to cart' : 'Add to cart'}
+        {product.stock <= 0 ? 'ناموجود' : justAdded ? '✓ به سبد افزوده شد' : 'افزودن به سبد'}
       </button>
     </article>
   );

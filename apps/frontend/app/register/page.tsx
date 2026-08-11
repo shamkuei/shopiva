@@ -5,6 +5,14 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
+function toPersianError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes('ubdomain')) return 'این زیردامنه قبلاً گرفته شده است.';
+  if (m.includes('mail')) return 'این ایمیل قبلاً ثبت شده است.';
+  if (m.includes('password')) return 'رمز عبور باید حداقل ۸ کاراکتر باشد.';
+  return 'ثبت‌نام ناموفق بود. دوباره تلاش کنید.';
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [storeName, setStoreName] = useState('');
@@ -23,10 +31,10 @@ export default function RegisterPage() {
         method: 'POST',
         body: { storeName, subdomain, email, password },
       });
-      // Registered + auth cookie set -> straight to the admin panel.
+      // ثبت‌نام انجام شد و کوکی احراز هویت تنظیم شد -> ورود به پنل مدیریت.
       router.replace('/admin');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      setError(toPersianError(err instanceof Error ? err.message : ''));
     } finally {
       setLoading(false);
     }
@@ -34,12 +42,12 @@ export default function RegisterPage() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-6 py-16">
-      <h1 className="text-3xl font-bold tracking-tight text-slate-900">Create your store</h1>
-      <p className="mt-1 text-slate-500">Register a store and owner account.</p>
+      <h1 className="text-3xl font-bold tracking-tight text-slate-900">ساخت فروشگاه</h1>
+      <p className="mt-1 text-slate-500">یک فروشگاه و حساب کاربری مالک بسازید.</p>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-4">
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Store name</span>
+          <span className="text-sm font-medium text-slate-700">نام فروشگاه</span>
           <input
             required
             value={storeName}
@@ -48,7 +56,7 @@ export default function RegisterPage() {
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Subdomain</span>
+          <span className="text-sm font-medium text-slate-700">زیردامنه</span>
           <div className="mt-1 flex items-center rounded-lg border border-slate-300 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
             <input
               required
@@ -62,7 +70,7 @@ export default function RegisterPage() {
           </div>
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Email</span>
+          <span className="text-sm font-medium text-slate-700">ایمیل</span>
           <input
             type="email"
             required
@@ -72,7 +80,7 @@ export default function RegisterPage() {
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-slate-700">Password</span>
+          <span className="text-sm font-medium text-slate-700">رمز عبور</span>
           <input
             type="password"
             required
@@ -81,7 +89,7 @@ export default function RegisterPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
           />
-          <span className="mt-1 block text-xs text-slate-400">At least 8 characters.</span>
+          <span className="mt-1 block text-xs text-slate-400">حداقل ۸ کاراکتر.</span>
         </label>
 
         {error && (
@@ -93,14 +101,14 @@ export default function RegisterPage() {
           disabled={loading}
           className="w-full rounded-lg bg-brand px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-brand-dark disabled:opacity-60"
         >
-          {loading ? 'Creating…' : 'Create store'}
+          {loading ? 'در حال ساخت…' : 'ساخت فروشگاه'}
         </button>
       </form>
 
       <p className="mt-6 text-sm text-slate-500">
-        Already have a store?{' '}
+        قبلاً فروشگاه ساخته‌اید؟{' '}
         <Link href="/login" className="font-semibold text-brand hover:underline">
-          Log in
+          ورود
         </Link>
       </p>
     </div>

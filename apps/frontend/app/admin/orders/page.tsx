@@ -8,12 +8,12 @@ import { StatusBadge } from '@/components/admin/StatusBadge';
 import type { Order, OrderStatus } from '@/lib/types';
 
 const FILTERS: Array<{ label: string; value: OrderStatus | 'all' }> = [
-  { label: 'All', value: 'all' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Paid', value: 'paid' },
-  { label: 'Shipped', value: 'shipped' },
-  { label: 'Cancelled', value: 'cancelled' },
-  { label: 'Failed', value: 'failed' },
+  { label: 'همه', value: 'all' },
+  { label: 'در انتظار', value: 'pending' },
+  { label: 'پرداخت‌شده', value: 'paid' },
+  { label: 'ارسال‌شده', value: 'shipped' },
+  { label: 'لغو‌شده', value: 'cancelled' },
+  { label: 'ناموفق', value: 'failed' },
 ];
 
 export default function AdminOrdersPage() {
@@ -32,7 +32,7 @@ export default function AdminOrdersPage() {
         if (active) setOrders(data);
         setError('');
       } catch (err) {
-        if (active) setError(err instanceof Error ? err.message : 'Failed to load orders');
+        if (active) setError(err instanceof Error ? err.message : 'بارگذاری سفارش‌ها ناموفق بود.');
       } finally {
         if (active) setLoading(false);
       }
@@ -47,7 +47,7 @@ export default function AdminOrdersPage() {
       <AdminNav />
 
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Orders</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">سفارش‌ها</h1>
       </header>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -58,7 +58,7 @@ export default function AdminOrdersPage() {
             className={`rounded-full px-3 py-1 text-sm font-medium transition ${
               filter === f.value
                 ? 'bg-brand text-white'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
             }`}
           >
             {f.label}
@@ -69,29 +69,29 @@ export default function AdminOrdersPage() {
       {error && <p className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>}
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-right text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
             <tr>
-              <th className="px-4 py-3">Order</th>
-              <th className="px-4 py-3">Customer</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Total</th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3 text-right">View</th>
+              <th className="px-4 py-3">سفارش</th>
+              <th className="px-4 py-3">مشتری</th>
+              <th className="px-4 py-3">وضعیت</th>
+              <th className="px-4 py-3">مبلغ</th>
+              <th className="px-4 py-3">تاریخ</th>
+              <th className="px-4 py-3 text-start">مشاهده</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                  Loading…
+                  در حال بارگذاری…
                 </td>
               </tr>
             )}
             {!loading && orders.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
-                  No orders {filter !== 'all' && `with status "${filter}"`}.
+                  {filter !== 'all' ? `سفارشی با وضعیت «${FILTERS.find((f) => f.value === filter)?.label}» وجود ندارد.` : 'هنوز سفارشی ثبت نشده است.'}
                 </td>
               </tr>
             )}
@@ -104,14 +104,14 @@ export default function AdminOrdersPage() {
                 </td>
                 <td className="px-4 py-3 text-slate-700">{formatPrice(o.totalAmount)}</td>
                 <td className="px-4 py-3 text-slate-500">
-                  {new Date(o.createdAt).toLocaleDateString()}
+                  {new Date(o.createdAt).toLocaleDateString('fa-IR')}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3">
                   <Link
                     href={`/admin/orders/${o.id}`}
                     className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                   >
-                    View
+                    مشاهده
                   </Link>
                 </td>
               </tr>

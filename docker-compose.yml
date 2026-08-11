@@ -42,6 +42,7 @@ services:
   backend:
     build:
       context: ./apps/backend
+      target: development
     container_name: shopiva-backend
     restart: unless-stopped
     depends_on:
@@ -53,7 +54,7 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: "4000"
       # Hostname `postgres` resolves to the postgres service on the compose network.
-      DATABASE_URL: postgresql://${POSTGRES_USER:-shopiva}:${POSTGRES_PASSWORD:-shopiva}@postgres:5432/${POSTGRES_DB:-shopiva}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-shopiva}:${POSTGRES_PASSWORD:-shopiva}@postgres:5432/${POSTGRES_DB:-shopiva}
       REDIS_URL: redis://redis:6379
       STORE_DEFAULT_SUBDOMAIN: ${STORE_DEFAULT_SUBDOMAIN:-default}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
@@ -75,6 +76,7 @@ services:
   frontend:
     build:
       context: ./apps/frontend
+      target: development
     container_name: shopiva-frontend
     restart: unless-stopped
     depends_on:

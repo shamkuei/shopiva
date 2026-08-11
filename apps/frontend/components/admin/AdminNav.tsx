@@ -6,15 +6,14 @@ import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
 const LINKS = [
-  { href: '/admin', label: 'Dashboard', exact: true },
-  { href: '/admin/products', label: 'Products' },
-  { href: '/admin/orders', label: 'Orders', badge: true },
+  { href: '/admin', label: 'داشبورد', exact: true },
+  { href: '/admin/products', label: 'محصولات' },
+  { href: '/admin/orders', label: 'سفارش‌ها', badge: true },
 ];
 
 /**
- * Admin top nav. The Orders link carries a badge with the number of pending
- * orders, polled every 30s and refreshed on window focus — a lightweight "new
- * order" notification.
+ * نوار بالای پنل مدیریت. لینک «سفارش‌ها» یک نشان با تعداد سفارش‌های در انتظار
+ * دارد که هر ۳۰ ثانیه و با فوکوس پنجره به‌روز می‌شود — اعلانی ساده برای سفارش‌های جدید.
  */
 export function AdminNav() {
   const pathname = usePathname();
@@ -56,8 +55,8 @@ export function AdminNav() {
           >
             {link.label}
             {link.badge && pending !== null && pending > 0 && (
-              <span className="ml-2 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-semibold text-white">
-                {pending}
+              <span className="ms-2 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-rose-500 px-1.5 text-xs font-semibold text-white">
+                {pending.toLocaleString('fa-IR')}
               </span>
             )}
           </Link>
