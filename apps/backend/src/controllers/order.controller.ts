@@ -35,10 +35,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     address: typeof c.address === 'string' && c.address.trim() ? c.address.trim() : null,
   };
 
-  const order = await orderService.createOrder(req.store!.id, {
-    items: cleanItems,
-    customer: cleanCustomer,
-  });
+  const order = await orderService.createOrder({ items: cleanItems, customer: cleanCustomer });
   res.status(201).json({ data: order });
 });
 
@@ -47,7 +44,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
  * gateway URL the client should redirect the user to.
  */
 export const pay = asyncHandler(async (req: Request, res: Response) => {
-  const order = await orderService.getOrderForStore(req.store!.id, req.params.id as string);
+  const order = await orderService.getOrderById(req.params.id as string);
   if (!order) throw ApiError.notFound('Order not found');
   if (order.status === 'paid') throw ApiError.badRequest('Order is already paid');
 

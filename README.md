@@ -1,15 +1,15 @@
 # Shopiva
 
-A monorepo starter for **Shopiva**, a multi-tenant storefront-builder SaaS.
+A monorepo for **Shopiva**, a single-store online shop (Persian / RTL).
 Built with an npm-workspaces layout:
 
 - **`apps/backend`** — Express.js + TypeScript + Drizzle ORM (PostgreSQL)
 - **`apps/frontend`** — Next.js (App Router) + TypeScript + Tailwind CSS
 - **`docker-compose.yml`** — PostgreSQL 16, Redis, backend, frontend
 
-The data model is multi-tenant from day one: every catalog row is scoped to a
-`stores` tenant. Today there is a single seeded store; the schema and the API
-are ready to host many tenants without changes.
+The storefront (products, cart, checkout + Zarinpal payment) is public; the
+admin panel (product + order management) is behind login. The owner is seeded —
+`owner@shopiva.test` / `password123`.
 
 ---
 
@@ -37,13 +37,12 @@ That's it. Docker builds the backend and frontend images, starts PostgreSQL and
 Redis, and on first boot the backend automatically:
 
 1. `drizzle-kit migrate` — apply pending migrations (from `src/db/schema.ts`)
-2. `seed` — create the default store + sample products
+2. `seed` — create the owner + sample products + orders
 3. start the API
 
 Open:
 - **Frontend (storefront):** http://localhost:3000
-- **Register / create a store:** http://localhost:3000/register
-- **Log in:** http://localhost:3000/login
+- **Log in:** http://localhost:3000/login (`owner@shopiva.test` / `password123`)
 - **Admin panel (protected):** http://localhost:3000/admin
 - **Backend API:** http://localhost:4000
 - **Health check:** http://localhost:4000/api/health
@@ -82,7 +81,7 @@ shopiva/
 │   │   ├── src/
 │   │   │   ├── config/              # env, redis client
 │   │   │   ├── db/                  # Drizzle client, schema, seed
-│   │   │   │   ├── schema.ts        # multi-tenant data model
+│   │   │   │   ├── schema.ts        # single-store data model
 │   │   │   │   ├── index.ts         # drizzle(client, { schema })
 │   │   │   │   └── seed.ts          # default store + sample products
 │   │   │   ├── middlewares/         # tenant, auth (requireAuth/Owner), errors, upload
@@ -114,43 +113,24 @@ shopiva/
 
 ---
 
-## How multi-tenancy works
+## Single-store model
 
-- The **`stores`** table (`apps/backend/src/db/schema.ts`) is the tenant. Every
-  `users`, `products`, `orders`, … row belongs to a store via `storeId`.
-- The **tenant middleware** (`apps/backend/src/middlewares/tenantMiddleware.ts`)
-  resolves the current store per request from the `x-store-subdomain` header and
-  attaches it to `req.store`.
-- The **services layer** always scopes queries by `req.store.id`, so a request
-  for one tenant can never touch another tenant's data.
-
-## Subdomain routing
-
-Each store lives on its own subdomain (`acme.yourdomain.com`). The **Next.js
-middleware** (`apps/frontend/middleware.ts`) reads the subdomain from the `Host`
-header and forwards it to the app: as the `x-store-subdomain` request header
-(server components) and a `store-subdomain` cookie (client components), which the
-API helpers then send to the backend.
-
-- Apex / www (`yourdomain.com`) → marketing landing + `/login`, `/register`, `/admin`.
-- `*.yourdomain.com` → that store's storefront.
-- An **unknown subdomain** (no matching store) → the 404 page (`app/not-found.tsx`).
-
-`ROOT_DOMAIN` (frontend env) tells the middleware what the apex is — use
-`localhost` for dev (`*.localhost` works), or your domain in production. In dev
-you can also append `?store=acme` to override. Put a wildcard reverse proxy in
-front in production — see [`deploy/`](deploy/) for a Caddyfile and an Nginx
-config (both preserve the `Host` header so subdomains route correctly).
+There is no `stores`/tenant table — this is one online store. Products and
+orders are global (no `storeId`). The storefront reads the store name from the
+`NEXT_PUBLIC_STORE_NAME` env var. The admin panel (products + orders) is
+protected by login (`requireAuth` + `requireOwner`); customers check out as
+guests (no account). See [`deploy/`](deploy/) for a single-domain Caddy/Nginx
+proxy config.
 
 ---
 
 ## Authentication
 
-Store-owner auth is JWT-based with tokens stored **only in httpOnly cookies**
-(never `localStorage`, never returned in response bodies):
+Admin auth is JWT-based with tokens stored **only in httpOnly cookies** (never
+`localStorage`, never returned in response bodies). The owner is provisioned by
+the seed (`owner@shopiva.test` / `password123`); there is no public registration
+— customers check out as guests.
 
-- `POST /api/auth/register` — creates a Store + owner User together (atomic),
-  hashes the password (bcrypt), and sets the cookies.
 - `POST /api/auth/login` — verifies credentials and sets the cookies.
 - `POST /api/auth/refresh` — rotates the access token from the refresh cookie.
 - `POST /api/auth/logout` — clears the cookies.
@@ -162,13 +142,11 @@ Cookies:
 - `refresh_token` (7d, `path=/api/auth`) — only sent to the refresh/logout endpoints.
 
 `requireAuth` middleware reads + verifies the access cookie and protects
-`/api/admin/*` (the admin panel API, scoped to the owner's store). A
-`requireOwner` guard restricts owner-only routes.
+`/api/admin/*`. A `requireOwner` guard restricts owner-only routes.
 
-On the frontend, `app/login` and `app/register` post to the auth endpoints
-(`credentials: 'include'`) and redirect to `/admin` on success. A Next.js
-`middleware.ts` gates `/admin` (redirects to `/login` without an `access_token`
-cookie) and skips the auth pages when already logged in.
+On the frontend, `app/login` posts to the auth endpoint
+(`credentials: 'include'`) and redirects to `/admin` on success; the admin pages
+redirect to `/login` when `/api/auth/me` returns 401.
 
 > Passwords are hashed with **bcryptjs** (pure-JS bcrypt — same algorithm/API as
 > native `bcrypt`, no native build step). Swap to `bcrypt` with a one-line change
@@ -184,7 +162,7 @@ Checkout creates a `pending` order, then hands off to the Zarinpal gateway:
    Zarinpal and returns `{ gatewayUrl }`. The frontend redirects the browser
    there (`window.location.href`).
 2. Zarinpal redirects back to `GET /api/payments/callback?Authority=…&Status=…&order=…`
-   (tenant-agnostic — the gateway sends no `x-store-subdomain` header).
+   (public — the gateway has no auth context).
 3. The backend verifies the transaction with Zarinpal **server-side**, then
    redirects to the frontend result page:
    - `code 100/101` → order marked **paid** → `/payment/result?status=paid&ref=…`

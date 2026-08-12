@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { AdminNav } from '@/components/admin/AdminNav';
-import type { User, Store } from '@/lib/types';
+import type { User } from '@/lib/types';
 
 const ROLE_LABELS: Record<string, string> = {
   OWNER: 'مالک',
@@ -13,10 +13,11 @@ const ROLE_LABELS: Record<string, string> = {
   STAFF: 'کارمند',
 };
 
+const STORE_NAME = process.env.NEXT_PUBLIC_STORE_NAME ?? 'فروشگاه شاپیوا';
+
 export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
-  const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,11 +27,6 @@ export default function AdminPage() {
         const me = await apiFetch<User>('/api/auth/me');
         if (!alive) return;
         setUser(me);
-        try {
-          setStore(await apiFetch<Store>('/api/admin/store'));
-        } catch {
-          /* fetch store is non-fatal */
-        }
       } catch {
         router.replace('/login');
       } finally {
@@ -58,9 +54,7 @@ export default function AdminPage() {
       <header className="mb-8 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wider text-brand">پنل مدیریت</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">
-            {store ? store.name : 'فروشگاه شما'}
-          </h1>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">{STORE_NAME}</h1>
         </div>
         <button
           onClick={logout}
@@ -80,16 +74,6 @@ export default function AdminPage() {
           <div>
             <dt className="text-slate-400">نقش</dt>
             <dd className="font-medium text-slate-800">{ROLE_LABELS[user?.role ?? ''] ?? user?.role}</dd>
-          </div>
-          <div>
-            <dt className="text-slate-400">فروشگاه</dt>
-            <dd className="font-medium text-slate-800">
-              {store ? `${store.subdomain}.shopiva.app` : '—'}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-slate-400">شناسه‌ی فروشگاه</dt>
-            <dd className="font-mono text-xs text-slate-600">{store?.id ?? '—'}</dd>
           </div>
         </dl>
       </section>

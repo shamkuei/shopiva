@@ -68,9 +68,8 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-6 text-sm text-slate-500">
-        هنوز فروشگاه نساخته‌اید؟{' '}
-        <Link href="/register" className="font-semibold text-brand hover:underline">
-          ساخت فروشگاه
+        <Link href="/" className="font-semibold text-brand hover:underline">
+          ← بازگشت به فروشگاه
         </Link>
       </p>
     </div>

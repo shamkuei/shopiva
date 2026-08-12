@@ -1,48 +1,15 @@
-# Shopiva production reverse proxy (Caddy).
+# Shopiva production reverse proxy (Caddy) — single store on one domain.
 #
-# - Apex/www and *.{$ROOT_DOMAIN} route to the Next.js frontend.
-# - /api/* and /uploads/* route to the backend (same-origin from the browser).
-# - Apex/www get automatic HTTPS via Let's Encrypt (HTTP-01).
-# - Store subdomains get a cert ON DEMAND; Caddy asks the backend whether a
-#   store exists before issuing (prevents cert abuse). Requires a wildcard DNS
-#   A record: *.yourdomain.com -> your server IP.
+# /api/* and /uploads/* -> backend; everything else -> Next.js frontend.
+# Caddy issues + renews a Let's Encrypt certificate for {$APP_DOMAIN} automatically.
 
 {
 	email {$ACME_EMAIL}
-	on_demand_tls {
-		ask http://backend:4000/api/stores/exists
-	}
 }
 
-# Apex + www -> marketing site / login / register / admin
-{$ROOT_DOMAIN}, www.{$ROOT_DOMAIN} {
+{$APP_DOMAIN} {
 	@backend path /api/* /uploads/*
 	reverse_proxy @backend backend:4000
 
 	reverse_proxy frontend:3000
 }
-
-# *.{$ROOT_DOMAIN} -> storefront subdomains (cert issued per subdomain on demand)
-*.{$ROOT_DOMAIN} {
-	tls {
-		on_demand
-	}
-
-	@backend path /api/* /uploads/*
-	reverse_proxy @backend backend:4000
-
-	reverse_proxy frontend:3000
-}
-
-# ── Alternative: a single wildcard cert for all subdomains ───────────────────
-# Replaces per-subdomain on-demand TLS. Needs a Caddy image built with the DNS
-# plugin (e.g. caddy-dns/cloudflare) and a DNS provider token:
-#
-# *.{$ROOT_DOMAIN} {
-# 	tls {
-# 		dns cloudflare {$CLOUDFLARE_API_TOKEN}
-# 	}
-# 	@backend path /api/* /uploads/*
-# 	reverse_proxy @backend backend:4000
-# 	reverse_proxy frontend:3000
-# }

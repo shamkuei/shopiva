@@ -4,7 +4,6 @@ import { ApiError } from '../utils/ApiError';
 
 export interface AuthUser {
   id: string;
-  storeId: string;
   role: string;
   email: string;
 }
@@ -13,7 +12,7 @@ export interface AuthUser {
  * Reads the access token from the httpOnly `access_token` cookie, verifies it,
  * and attaches the decoded user to `req.user`. Rejects with 401 otherwise.
  *
- * Use to protect admin-panel routes: app.use('/api/admin', requireAuth, ...).
+ * Use to protect admin routes: app.use('/api/admin', requireAuth, ...).
  */
 export const requireAuth = (req: Request, _res: Response, next: NextFunction) => {
   try {
@@ -23,7 +22,6 @@ export const requireAuth = (req: Request, _res: Response, next: NextFunction) =>
     const payload = verifyAccessToken(token);
     req.user = {
       id: payload.sub,
-      storeId: payload.storeId,
       role: payload.role,
       email: payload.email,
     };

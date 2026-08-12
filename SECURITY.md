@@ -16,10 +16,7 @@ implemented in this repo; ⚠️ are operational steps for you.
 
 ## Transport & cookies
 - ✅ `COOKIE_SECURE=true` is forced in the production compose (HTTPS-only cookies).
-- ✅ Caddy terminates TLS (automatic Let's Encrypt for apex/www; on-demand or
-  DNS-01 for wildcard subdomains).
-- ⚠️ Ensure you have a wildcard DNS A record (`*.yourdomain.com`) pointing at the
-  server so every store subdomain gets HTTPS.
+- ✅ Caddy terminates TLS (automatic Let's Encrypt for the store domain).
 
 ## API hardening
 - ✅ **Helmet** middleware sets secure headers (XSS, clickjacking, etc.).
@@ -28,10 +25,9 @@ implemented in this repo; ⚠️ are operational steps for you.
 - ✅ `trust proxy` enabled so rate-limiting sees the real client IP behind Caddy.
 - ✅ JSON body size capped (`1mb`); file uploads capped (`5mb`, images only).
 
-## Multi-tenant isolation
-- ✅ Every storefront + admin query is scoped by `storeId` (tenant). A foreign
-  store's resource id returns `404` — no cross-store reads/writes. Covered by the
-  test suite.
+## Data access
+- ✅ Admin endpoints (`/api/admin/*`) are protected by `requireAuth` + `requireOwner`.
+- ✅ Storefront reads/products are public; checkout is guest (no account).
 
 ## Secrets & configuration
 - ✅ Secrets come from environment variables (`.env`), which are gitignored.

@@ -1,9 +1,8 @@
 import { Router } from 'express';
-import { listProducts, getProduct, createProduct, deleteProduct } from '../controllers/product.controller';
+import { listProducts, getProduct } from '../controllers/product.controller';
 
+// Public storefront product catalog (read-only). Management is under /api/admin.
 const router = Router();
 router.get('/', listProducts);
-router.post('/', createProduct);
 router.get('/:id', getProduct);
-router.delete('/:id', deleteProduct);
 export default router;

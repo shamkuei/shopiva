@@ -47,9 +47,7 @@ services:
       PORT: "4000"
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://redis:6379
-      STORE_DEFAULT_SUBDOMAIN: ${STORE_DEFAULT_SUBDOMAIN:-default}
       CORS_ORIGIN: ${CORS_ORIGIN:-}
-      ROOT_DOMAIN: ${ROOT_DOMAIN}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
@@ -69,13 +67,12 @@ services:
       target: production
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-        NEXT_PUBLIC_ROOT_DOMAIN: ${NEXT_PUBLIC_ROOT_DOMAIN}
+        NEXT_PUBLIC_STORE_NAME: ${NEXT_PUBLIC_STORE_NAME:-فروشگاه شاپیوا}
     restart: unless-stopped
     environment:
       NODE_ENV: production
       # Server-side (SSR) requests reach the backend over the internal network.
       API_URL: http://backend:4000
-      ROOT_DOMAIN: ${ROOT_DOMAIN}
     depends_on:
       - backend
 
@@ -90,8 +87,8 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     environment:
-      ROOT_DOMAIN: ${ROOT_DOMAIN}
-      ACME_EMAIL: ${ACME_EMAIL:-admin@${ROOT_DOMAIN}}
+      APP_DOMAIN: ${APP_DOMAIN:-shopiva.app}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@shopiva.app}
     depends_on:
       - frontend
       - backend

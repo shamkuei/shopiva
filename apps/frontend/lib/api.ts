@@ -1,23 +1,9 @@
 // API helpers for the frontend.
 //
 // Auth + admin requests use `credentials: 'include'` so the httpOnly auth
-// cookies are sent automatically. Storefront (tenant-scoped) requests carry the
-// `x-store-subdomain` header derived from the site's subdomain — server
-// components read it from the request header set by middleware; client
-// components read the `store-subdomain` cookie.
+// cookies are sent automatically. Single store — no tenant/subdomain header.
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-
-function readCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : undefined;
-}
-
-/** The store subdomain for the current site (mirrors the middleware cookie). */
-export function getStoreSubdomain(): string | undefined {
-  return readCookie('store-subdomain');
-}
 
 /** Authenticated JSON request (auth + admin endpoints). */
 export async function apiFetch<T>(
@@ -46,18 +32,12 @@ export async function apiFetch<T>(
   return payload!.data as T;
 }
 
-/** Public storefront POST (e.g. checkout) — tenant-scoped via the subdomain cookie. */
+/** Public storefront POST (e.g. checkout). */
 export async function apiStorePost<T>(path: string, body: unknown): Promise<T> {
-  const subdomain = getStoreSubdomain();
-  if (!subdomain) throw new Error('No store subdomain resolved for this request');
-
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-store-subdomain': subdomain,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
@@ -73,14 +53,12 @@ export async function apiStorePost<T>(path: string, body: unknown): Promise<T> {
 
 /** Multipart upload (e.g. product image). Returns the parsed `data`. */
 export async function apiUpload<T>(path: string, file: File): Promise<T> {
-  const subdomain = getStoreSubdomain();
   const form = new FormData();
   form.append('image', file);
 
   const res = await fetch(`${API_URL}${path}`, {
     method: 'POST',
     credentials: 'include',
-    headers: subdomain ? { 'x-store-subdomain': subdomain } : undefined,
     body: form,
   });
 

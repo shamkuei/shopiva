@@ -3,11 +3,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { ApiError } from '../utils/ApiError';
 import { productService, type ProductWrite } from '../services/product.service';
 
-/**
- * Admin product CRUD. EVERY handler scopes by `req.user.storeId` (set by the
- * auth middleware) — a store can only read/mutate its own products. Cross-store
- * ids simply resolve to "not found".
- */
+/** Admin product CRUD (single store — products are global, no storeId). */
 
 function pickField(value: unknown): unknown {
   return value === undefined ? undefined : value === null ? null : value;
@@ -49,31 +45,31 @@ function parseProductFields(body: unknown, requireCore: boolean): ProductWrite {
   return out;
 }
 
-export const list = asyncHandler(async (req: Request, res: Response) => {
-  res.json({ data: await productService.listByStore(req.user!.storeId) });
+export const list = asyncHandler(async (_req: Request, res: Response) => {
+  res.json({ data: await productService.list() });
 });
 
 export const get = asyncHandler(async (req: Request, res: Response) => {
-  const product = await productService.getById(req.user!.storeId, req.params.id as string);
+  const product = await productService.getById(req.params.id as string);
   if (!product) throw ApiError.notFound('Product not found');
   res.json({ data: product });
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const data = parseProductFields(req.body, true);
-  const product = await productService.create(req.user!.storeId, data);
+  const product = await productService.create(data);
   res.status(201).json({ data: product });
 });
 
 export const update = asyncHandler(async (req: Request, res: Response) => {
   const data = parseProductFields(req.body, false);
-  const product = await productService.update(req.user!.storeId, req.params.id as string, data);
+  const product = await productService.update(req.params.id as string, data);
   if (!product) throw ApiError.notFound('Product not found');
   res.json({ data: product });
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {
-  const deleted = await productService.delete(req.user!.storeId, req.params.id as string);
+  const deleted = await productService.delete(req.params.id as string);
   if (!deleted) throw ApiError.notFound('Product not found');
   res.status(204).send();
 });

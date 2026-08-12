@@ -1,14 +1,12 @@
-import type { Store } from '../db/schema';
+// `user` is attached by the auth middleware (requireAuth).
+// `export {}` makes this a module so the `declare module` below is an
+// augmentation (merged with the real Express types), not a replacement.
+export {};
 
-// Request augmentations:
-// - `store`: the resolved tenant (set by the tenant middleware).
-// - `user`:  the authenticated store owner/staff (set by the auth middleware).
 declare module 'express-serve-static-core' {
   interface Request {
-    store?: Store;
     user?: {
       id: string;
-      storeId: string;
       role: string;
       email: string;
     };

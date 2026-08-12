@@ -1,54 +1,31 @@
 import Link from 'next/link';
-import { headers } from 'next/headers';
-import { notFound } from 'next/navigation';
 import { ProductCard } from '@/components/ProductCard';
 import { CartBadge } from '@/components/CartBadge';
-import type { Product, Store } from '@/lib/types';
+import type { Product } from '@/lib/types';
 
 // Server-side base URL (resolves to the backend service inside Docker).
 const API_URL = process.env.API_URL ?? 'http://localhost:4000';
+const STORE_NAME = process.env.NEXT_PUBLIC_STORE_NAME ?? 'فروشگاه شاپیوا';
 
-/** Fetch a storefront resource scoped to `subdomain`. status 404 => store missing. */
-async function fetchStoreJson<T>(path: string, subdomain: string): Promise<{ data: T | null; status: number }> {
+async function fetchJson<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${API_URL}${path}`, {
-      headers: { 'x-store-subdomain': subdomain },
-      cache: 'no-store',
-    });
-    if (!res.ok) return { data: null, status: res.status };
-    return { data: (await res.json()).data as T, status: res.status };
+    const res = await fetch(`${API_URL}${path}`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return (await res.json()).data as T;
   } catch {
-    return { data: null, status: 0 }; // backend not reachable
+    return null; // backend not reachable
   }
 }
 
 export default async function Home() {
-  const h = await headers();
-  const subdomain = h.get('x-store-subdomain');
-
-  // Apex / www / no subdomain -> marketing landing (login/register/admin).
-  if (!subdomain) {
-    return <Landing />;
-  }
-
-  const storeRes = await fetchStoreJson<Store>('/api/stores/current', subdomain);
-  if (storeRes.status === 404) {
-    // Subdomain didn't map to a store -> proper 404 page.
-    notFound();
-  }
-
-  const productsRes = await fetchStoreJson<Product[]>('/api/products', subdomain);
-  const store = storeRes.data;
-  const products = productsRes.data;
-  const backendDown = store === null && products === null;
+  const products = await fetchJson<Product[]>('/api/products');
+  const backendDown = products === null;
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-12">
       <header className="mb-10">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand">
-            {store ? `${store.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'shopiva.app'}` : subdomain}
-          </p>
+          <p className="text-sm font-semibold uppercase tracking-wider text-brand">{STORE_NAME}</p>
           <div className="flex items-center gap-3">
             <CartBadge />
             <Link href="/admin" className="text-sm font-semibold text-brand hover:underline">
@@ -56,14 +33,8 @@ export default async function Home() {
             </Link>
           </div>
         </div>
-        <h1 className="mt-1 text-4xl font-bold tracking-tight text-slate-900">
-          {store ? store.name : 'فروشگاه شما'}
-        </h1>
-        <p className="mt-2 text-slate-500">
-          {store
-            ? `به ${store.name} خوش آمدید. این‌ها محصولات موجود هستند.`
-            : 'فروشگاه پس از اتصال به سرور نمایش داده می‌شود.'}
-        </p>
+        <h1 className="mt-1 text-4xl font-bold tracking-tight text-slate-900">{STORE_NAME}</h1>
+        <p className="mt-2 text-slate-500">به فروشگاه ما خوش آمدید. این‌ها محصولات موجود هستند.</p>
       </header>
 
       {backendDown && (
@@ -89,35 +60,6 @@ export default async function Home() {
           هنوز محصولی ثبت نشده است.
         </p>
       )}
-    </div>
-  );
-}
-
-function Landing() {
-  return (
-    <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-      <p className="text-sm font-semibold uppercase tracking-wider text-brand">شاپیوا</p>
-      <h1 className="mt-2 text-5xl font-bold tracking-tight text-slate-900">
-        فروشگاه آنلاین خود را در چند دقیقه راه‌اندازی کنید
-      </h1>
-      <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
-        شاپیوا یک پلتفرم چندفروشگاهی برای ساخت فروشگاه آنلاین است. هر فروشگاه زیردامنه‌ی اختصاصی
-        خود را دارد — همین حالا فروشگاه خود را بسازید و فروش را شروع کنید.
-      </p>
-      <div className="mt-8 flex items-center justify-center gap-3">
-        <Link
-          href="/register"
-          className="rounded-lg bg-brand px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-dark"
-        >
-          ساخت فروشگاه
-        </Link>
-        <Link
-          href="/login"
-          className="rounded-lg border border-slate-300 px-6 py-3 font-medium text-slate-700 transition hover:bg-slate-50"
-        >
-          ورود
-        </Link>
-      </div>
     </div>
   );
 }

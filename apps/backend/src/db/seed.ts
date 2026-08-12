@@ -1,17 +1,15 @@
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcryptjs';
 import { db, client } from './index';
-import { stores, users, products, orders, orderItems, type Product } from './schema';
+import { users, products, orders, orderItems, type Product } from './schema';
 
 /**
- * Template seed — populates the DB so you can see every screen without
- * registering anything.
+ * Template seed for the single store — populates the DB so you can see every
+ * screen without registering anything.
  *
- *   Store "default" (فروشگاه نمونه):
- *     - owner: owner@shopiva.test / password123
- *     - 8 Persian products (Toman pricing)
- *     - 6 orders across all statuses (pending/paid/shipped/cancelled)
- *   Store "boutique" (بوتیک نمونه): 3 products (multi-tenant demo)
+ *   - owner: owner@shopiva.test / password123
+ *   - 8 Persian products (Toman pricing)
+ *   - 6 orders across all statuses (pending/paid/shipped/cancelled)
  *
  * Idempotent: re-running won't duplicate. Run with: `npm run db:seed`.
  */
@@ -39,12 +37,6 @@ const DEFAULT_PRODUCTS: ProductSeed[] = [
   { title: 'کیبورد مکانیکی', description: 'کیبورد گیمینق با کلیدهای تعویض‌پذیر.', price: '4700000', imageUrl: 'https://picsum.photos/seed/shp-keyboard/600/400', stock: 8, category: 'الکترونیک' },
 ];
 
-const BOUTIQUE_PRODUCTS: ProductSeed[] = [
-  { title: 'لباس مجلسی', description: 'لباس مجلسی شب، دوخت ظریف.', price: '12000000', imageUrl: 'https://picsum.photos/seed/shp-dress/600/400', stock: 6, category: 'پوشاک' },
-  { title: 'کیف چرم', description: 'کیف دستی چرم طبیعی.', price: '4500000', imageUrl: 'https://picsum.photos/seed/shp-bag/600/400', stock: 14, category: 'لوازم جانبی' },
-  { title: 'شال ابریشمی', description: 'شال ابریشمی با طرح سنتی.', price: '1800000', imageUrl: 'https://picsum.photos/seed/shp-scarf/600/400', stock: 22, category: 'لوازم جانبی' },
-];
-
 // Each order: status, customer, and lines as [productIndex, quantity].
 const TEMPLATE_ORDERS: Array<{
   status: 'pending' | 'paid' | 'failed' | 'shipped' | 'cancelled';
@@ -62,42 +54,25 @@ const TEMPLATE_ORDERS: Array<{
   { status: 'cancelled', name: 'نرگس صادقی', phone: '09166666666', address: 'کرمان، خیابان جوادی', lines: [[0, 1]] },
 ];
 
-async function ensureStore(subdomain: string, name: string, plan: 'FREE' | 'PRO' | 'ENTERPRISE' = 'PRO') {
-  const existing = await db.select().from(stores).where(eq(stores.subdomain, subdomain)).limit(1);
-  if (existing[0]) {
-    await db.update(stores).set({ name, status: 'ACTIVE', plan }).where(eq(stores.id, existing[0].id));
-    return existing[0];
-  }
-  const [created] = await db
-    .insert(stores)
-    .values({ subdomain, name, status: 'ACTIVE', plan, defaultCurrency: 'IRR' })
-    .returning();
-  return created;
-}
-
-async function ensureOwner(storeId: string) {
+async function ensureOwner() {
   const existing = await db.select().from(users).where(eq(users.email, OWNER_EMAIL)).limit(1);
-  if (existing[0]) {
-    await db.update(stores).set({ ownerId: existing[0].id }).where(eq(stores.id, storeId));
-    return existing[0];
-  }
+  if (existing[0]) return existing[0];
   const passwordHash = await hash(OWNER_PASSWORD, 10);
   const [owner] = await db
     .insert(users)
-    .values({ email: OWNER_EMAIL, passwordHash, storeId, role: 'OWNER' })
+    .values({ email: OWNER_EMAIL, passwordHash, role: 'OWNER' })
     .returning();
-  await db.update(stores).set({ ownerId: owner.id }).where(eq(stores.id, storeId));
   return owner;
 }
 
-async function seedProducts(storeId: string, list: ProductSeed[]): Promise<Product[]> {
-  const existing = await db.select().from(products).where(eq(products.storeId, storeId));
-  if (existing.length > 0) return existing;
-  return db.insert(products).values(list.map((p) => ({ ...p, storeId }))).returning();
+async function seedProducts(): Promise<Product[]> {
+  const existing = await db.select().from(products).limit(1);
+  if (existing.length > 0) return db.select().from(products);
+  return db.insert(products).values(DEFAULT_PRODUCTS).returning();
 }
 
-async function seedOrders(storeId: string, prods: Product[]) {
-  const existing = await db.select().from(orders).where(eq(orders.storeId, storeId)).limit(1);
+async function seedOrders(prods: Product[]) {
+  const existing = await db.select().from(orders).limit(1);
   if (existing.length > 0) return;
 
   for (const t of TEMPLATE_ORDERS) {
@@ -111,7 +86,6 @@ async function seedOrders(storeId: string, prods: Product[]) {
     const [order] = await db
       .insert(orders)
       .values({
-        storeId,
         status: t.status,
         totalAmount: String(total),
         customerName: t.name,
@@ -127,17 +101,10 @@ async function seedOrders(storeId: string, prods: Product[]) {
 }
 
 async function main() {
-  const store = await ensureStore('default', 'فروشگاه نمونه');
-  await ensureOwner(store.id);
-  const prods = await seedProducts(store.id, DEFAULT_PRODUCTS);
-  await seedOrders(store.id, prods);
-
-  const store2 = await ensureStore('boutique', 'بوتیک نمونه', 'FREE');
-  await seedProducts(store2.id, BOUTIQUE_PRODUCTS);
-
-  console.log(
-    `[seed] done — login: ${OWNER_EMAIL} / ${OWNER_PASSWORD} | stores: default, boutique`,
-  );
+  await ensureOwner();
+  const prods = await seedProducts();
+  await seedOrders(prods);
+  console.log(`[seed] done — login: ${OWNER_EMAIL} / ${OWNER_PASSWORD}`);
 }
 
 main()

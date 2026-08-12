@@ -56,7 +56,6 @@ services:
       # Hostname `postgres` resolves to the postgres service on the compose network.
       DATABASE_URL: postgresql://${POSTGRES_USER:-shopiva}:${POSTGRES_PASSWORD:-shopiva}@postgres:5432/${POSTGRES_DB:-shopiva}
       REDIS_URL: redis://redis:6379
-      STORE_DEFAULT_SUBDOMAIN: ${STORE_DEFAULT_SUBDOMAIN:-default}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret-change-me}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me}
@@ -87,6 +86,7 @@ services:
       API_URL: http://backend:4000
       # Browser-side base URL — resolved from the user's browser.
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+      NEXT_PUBLIC_STORE_NAME: ${NEXT_PUBLIC_STORE_NAME:-فروشگاه شاپیوا}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     volumes:
