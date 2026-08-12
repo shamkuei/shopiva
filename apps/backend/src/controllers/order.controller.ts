@@ -48,15 +48,15 @@ export const pay = asyncHandler(async (req: Request, res: Response) => {
   if (!order) throw ApiError.notFound('Order not found');
   if (order.status === 'paid') throw ApiError.badRequest('Order is already paid');
 
-  // Zarinpal amounts are integer Tomans with a 1000-Toman minimum.
-  const amount = Math.round(Number(order.totalAmount));
-  if (!Number.isFinite(amount) || amount < 1000) {
+  // The order total is in Toman (the app's unit). Zarinpal needs ≥ 1000 Toman.
+  const tomanAmount = Math.round(Number(order.totalAmount));
+  if (!Number.isFinite(tomanAmount) || tomanAmount < 1000) {
     throw ApiError.badRequest('Order amount is below the Zarinpal minimum (1000 Toman)');
   }
 
   const { gatewayUrl, authority } = await zarinpalService
     .requestPayment({
-      amount,
+      tomanAmount,
       callbackUrl: `${env.zarinpalCallbackUrl}?order=${order.id}`,
       description: `Order ${order.id}`,
     })

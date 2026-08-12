@@ -1,12 +1,18 @@
 import { env } from '../config/env';
+import { toZarinpalAmount } from '../utils/money';
 
 /**
  * Thin Zarinpal gateway client (REST v4). Uses Node's global `fetch`.
  *
- * Amounts are integers in Tomans (Zarinpal's unit; 1 Toman = 10 Rials). The
- * gateway enforces a 1000-Toman minimum, so very small totals are rejected.
+ * The app is TOMAN throughout. The Toman→Rial conversion happens in ONE place —
+ * `toZarinpalAmount` — right before each gateway call. We send `currency:"IRR"`
+ * on the request so Zarinpal reads the amount as Rial (its default unit when
+ * `currency` is omitted is also Rial, but we set it explicitly to be safe).
  *
- * Docs: https://docs.zarinpal.com/payment-gateway/integration
+ * The gateway enforces a 1000-Toman minimum (checked by the caller, in Toman,
+ * before this service is called).
+ *
+ * Docs: https://www.zarinpal.com/docs/paymentGateway/moreFeatures/currency
  */
 
 const API_BASE = env.zarinpalSandbox
@@ -47,7 +53,8 @@ function firstError(errors: Array<{ code: number; message: string }> | undefined
 }
 
 export interface PaymentRequestInput {
-  amount: number; // Tomans
+  /** Integer Toman amount (the app's unit). Converted to Rial for the gateway. */
+  tomanAmount: number;
   callbackUrl: string;
   description: string;
   email?: string;
@@ -71,7 +78,8 @@ export async function requestPayment(input: PaymentRequestInput): Promise<Paymen
 
   const json = await post<{ code: number; authority: string }>('/pg/v4/payment/request.json', {
     merchant_id: env.zarinpalMerchantId,
-    amount: input.amount,
+    amount: toZarinpalAmount(input.tomanAmount), // Toman -> Rial (×10), the only conversion
+    currency: 'IRR',
     callback_url: input.callbackUrl,
     description: input.description,
     ...(Object.keys(metadata).length ? { metadata } : {}),
@@ -91,7 +99,8 @@ export async function requestPayment(input: PaymentRequestInput): Promise<Paymen
 }
 
 export interface VerifyInput {
-  amount: number; // Tomans — must equal the amount used at request time
+  /** Integer Toman amount — MUST equal the amount used at request time. */
+  tomanAmount: number;
   authority: string;
 }
 
@@ -104,15 +113,16 @@ export interface VerifyResult {
 }
 
 /**
- * Verify a completed payment. `code` 100 = paid now, 101 = already verified
- * (idempotent); both are success. Anything else is a failure.
+ * Verify a completed payment. The amount sent is converted with the SAME
+ * `toZarinpalAmount` used at request time, so request + verify always agree.
+ * `code` 100 = paid now, 101 = already verified (idempotent); both are success.
  */
 export async function verifyPayment(input: VerifyInput): Promise<VerifyResult> {
   const json = await post<{ code: number; ref_id?: number | string; card_pan?: string }>(
     '/pg/v4/payment/verify.json',
     {
       merchant_id: env.zarinpalMerchantId,
-      amount: input.amount,
+      amount: toZarinpalAmount(input.tomanAmount), // same conversion as request
       authority: input.authority,
     },
   );

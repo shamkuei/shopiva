@@ -45,12 +45,12 @@ export const callback = asyncHandler(async (req: Request, res: Response) => {
     return res.redirect(resultUrl(order.id, 'failed'));
   }
 
-  const amount = Math.round(Number(order.totalAmount));
+  const tomanAmount = Math.round(Number(order.totalAmount));
 
   // If the gateway call itself blows up, treat it as a failed payment so the
   // user still lands on a result page rather than a JSON 500.
   const result = await zarinpalService
-    .verifyPayment({ amount, authority })
+    .verifyPayment({ tomanAmount, authority })
     .catch(() => null);
 
   if (!result) {
