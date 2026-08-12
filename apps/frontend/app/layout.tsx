@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'شاپیوا',
-  description: 'سازنده‌ی فروشگاه آنلاین چندفروشگاهی',
+  title: 'شاپیوا | فروشگاه آنلاین',
+  description: 'فروشگاه آنلاین شاپیوا — بهترین‌هایتان را اینجا پیدا کنید.',
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;600;700;800;900&display=swap"
         />
       </head>
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">

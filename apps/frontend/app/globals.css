@@ -2,7 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  font-family: 'Vazirmatn', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+@layer base {
+  html,
+  body {
+    font-family: 'Vazirmatn', system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+
+  /* Display font for headings — the warm, characterful identity. */
+  h1,
+  h2 {
+    font-family: 'Lalezar', 'Vazirmatn', sans-serif;
+    font-weight: 400; /* Lalezar is a single-weight display face */
+  }
 }

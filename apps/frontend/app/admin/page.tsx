@@ -51,14 +51,14 @@ export default function AdminPage() {
     <div className="mx-auto max-w-3xl px-6 py-12">
       <AdminNav />
 
-      <header className="mb-8 flex items-center justify-between">
+      <header className="mb-8 flex items-center justify-between overflow-hidden rounded-3xl bg-gradient-to-l from-brand to-brand-dark p-6 shadow-warm sm:p-8">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-brand">پنل مدیریت</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">{STORE_NAME}</h1>
+          <p className="text-sm font-medium text-white/80">پنل مدیریت</p>
+          <h1 className="mt-1 text-display-lg text-white">{STORE_NAME}</h1>
         </div>
         <button
           onClick={logout}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+          className="rounded-full bg-white/15 px-5 py-2 text-sm font-medium text-white backdrop-blur transition hover:bg-white/25"
         >
           خروج
         </button>
