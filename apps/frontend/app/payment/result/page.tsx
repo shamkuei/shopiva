@@ -34,8 +34,16 @@ export default async function PaymentResultPage({
       </p>
 
       {orderId && (
-        <p className="mt-4 inline-block rounded-lg bg-slate-100 px-4 py-2 font-mono text-sm text-slate-600">
-          سفارش #{orderId}
+        <p className="mt-4">
+          <span className="inline-block rounded-lg bg-slate-100 px-4 py-2 font-mono text-sm text-slate-600">
+            سفارش #{orderId}
+          </span>
+          <Link
+            href={`/track?order=${orderId}`}
+            className="ms-3 text-sm font-semibold text-brand hover:underline"
+          >
+            پیگیری سفارش ←
+          </Link>
         </p>
       )}
       {paid && ref && <p className="mt-2 text-sm text-slate-400">کد پیگیری: {ref}</p>}

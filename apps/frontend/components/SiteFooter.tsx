@@ -17,8 +17,8 @@ const FOOTER_COLS = [
   {
     heading: 'فروشگاه',
     links: [
-      { href: '/#products', label: 'همه محصولات' },
-      { href: '/#products', label: 'جدیدترین‌ها' },
+      { href: '/products', label: 'همه محصولات' },
+      { href: '/products', label: 'جدیدترین‌ها' },
       { href: '/cart', label: 'سبد خرید' },
     ],
   },
@@ -27,7 +27,12 @@ const FOOTER_COLS = [
     links: [
       { href: '/login', label: 'ورود' },
       { href: '/admin', label: 'مدیریت فروشگاه' },
+      { href: '/contact', label: 'تماس با ما' },
     ],
+  },
+  {
+    heading: 'پشتیبانی',
+    links: [{ href: '/track', label: 'پیگیری سفارش' }],
   },
 ] as const;
 

@@ -121,7 +121,7 @@ export default async function ProductPage({ params }: PageProps) {
             </div>
 
             <div className="mt-5 flex flex-wrap items-baseline gap-3">
-              <span className="text-3xl font-extrabold text-brand">{formatPrice(product.price)}</span>
+              <span className="text-3xl font-bold text-brand">{formatPrice(product.price)}</span>
             </div>
 
             {product.description && (

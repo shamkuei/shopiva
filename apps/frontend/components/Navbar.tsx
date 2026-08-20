@@ -8,7 +8,8 @@ import { BrandMark } from '@/components/BrandMark';
 
 const NAV_LINKS = [
   { href: '/', label: 'خانه' },
-  { href: '/#products', label: 'محصولات' },
+  { href: '/products', label: 'محصولات' },
+  { href: '/contact', label: 'تماس' },
 ] as const;
 
 /**
@@ -41,7 +42,8 @@ export function Navbar() {
         <nav aria-label="اصلی" className="ms-auto hidden md:block">
           <ul className="flex items-center gap-6">
             {NAV_LINKS.map(({ href, label }) => {
-              const current = href === '/' && pathname === '/';
+              const current =
+                href === '/' ? pathname === '/' : pathname.startsWith(href);
               return (
                 <li key={href}>
                   <Link

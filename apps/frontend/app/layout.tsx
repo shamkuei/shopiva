@@ -14,14 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fa" dir="rtl">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;500;600;700;800;900&display=swap"
-        />
-      </head>
+      <head>{/* Fonts are self-hosted in public/fonts — see globals.css */}</head>
       <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         {children}
       </body>

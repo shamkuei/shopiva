@@ -7,15 +7,16 @@ import { users, products, orders, orderItems, type Product } from './schema';
  * Template seed for the single store — populates the DB so you can see every
  * screen without registering anything.
  *
- *   - owner: owner@shopiva.test / password123
+ *   - owner: OWNER_EMAIL / OWNER_PASSWORD env (dev default: owner@shopiva.test / password123)
  *   - 8 Persian products (Toman pricing)
  *   - 6 orders across all statuses (pending/paid/shipped/cancelled)
  *
  * Idempotent: re-running won't duplicate. Run with: `npm run db:seed`.
+ * For production use `npm run create-admin` instead of the demo-data seed.
  */
 
-const OWNER_EMAIL = 'owner@shopiva.test';
-const OWNER_PASSWORD = 'password123';
+const OWNER_EMAIL = process.env.OWNER_EMAIL ?? 'owner@shopiva.test';
+const OWNER_PASSWORD = process.env.OWNER_PASSWORD ?? 'password123';
 
 type ProductSeed = {
   title: string;
@@ -104,7 +105,7 @@ async function main() {
   await ensureOwner();
   const prods = await seedProducts();
   await seedOrders(prods);
-  console.log(`[seed] done — login: ${OWNER_EMAIL} / ${OWNER_PASSWORD}`);
+  console.log(`[seed] done — login as ${OWNER_EMAIL} (password from OWNER_PASSWORD env)`);
 }
 
 main()

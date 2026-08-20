@@ -58,6 +58,10 @@ services:
       ZARINPAL_CALLBACK_URL: ${ZARINPAL_CALLBACK_URL}
       WEB_URL: ${WEB_URL}
       SEED_ON_BOOT: ${SEED_ON_BOOT:-false}
+      # First-admin provisioning (SEED_ON_BOOT=admin). Passed through to the
+      # seed/create-admin scripts; harmless when unused.
+      OWNER_EMAIL: ${OWNER_EMAIL:-}
+      OWNER_PASSWORD: ${OWNER_PASSWORD:-}
     volumes:
       - backend_uploads:/app/uploads
 

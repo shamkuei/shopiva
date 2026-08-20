@@ -60,7 +60,7 @@ export function ProductCard({ product }: { product: Product }) {
         )}
 
         <div className="mt-4 flex items-center justify-between">
-          <span className="text-xl font-extrabold text-brand">{formatPrice(product.price)}</span>
+          <span className="text-xl font-bold text-brand">{formatPrice(product.price)}</span>
           <span
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
               soldOut ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-700'

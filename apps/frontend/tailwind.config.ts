@@ -8,7 +8,8 @@ import type { Config } from 'tailwindcss';
  *    existing `bg-slate-50` / `text-slate-900` / `border-slate-200` etc.
  *    becomes warm without touching components.
  *  - `brand` = terracotta, `accent` = saffron (no Tailwind defaults).
- *  - `display` font (Lalezar) for headings, `sans` (Vazirmatn) for body.
+ *  - `display`/`sans` both resolve to Shabnam (self-hosted, weights 400/500/700);
+ *    headings differentiate by weight (Bold), not by family.
  *  - coordinated type scale + warm shadows + entrance animations.
  */
 const config: Config = {
@@ -38,11 +39,12 @@ const config: Config = {
         accent: { DEFAULT: '#E5B25D', dark: '#D49A3F' },
       },
       fontFamily: {
-        sans: ['Vazirmatn', 'system-ui', 'Tahoma', 'sans-serif'],
-        display: ['Lalezar', 'Vazirmatn', 'sans-serif'],
+        sans: ['Shabnam', 'Vazirmatn', 'system-ui', 'Tahoma', 'sans-serif'],
+        // No separate display face — headings use Shabnam Bold via `font-bold`.
+        display: ['Shabnam', 'Vazirmatn', 'sans-serif'],
       },
       fontSize: {
-        // Coordinated display scale (Lalezar reads a touch large).
+        // Coordinated display scale (tuned when headings used Lalezar).
         'display-2xl': ['3.75rem', { lineHeight: '1.05', letterSpacing: '-0.02em' }],
         'display-xl': ['3rem', { lineHeight: '1.1', letterSpacing: '-0.01em' }],
         'display-lg': ['2.25rem', { lineHeight: '1.15' }],

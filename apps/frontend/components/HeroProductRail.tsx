@@ -95,7 +95,7 @@ function RailCard({ product }: { product: Product }) {
         <Link href={`/products/${product.id}`} className="line-clamp-1 text-sm font-semibold text-slate-900 hover:text-brand">
           {product.title}
         </Link>
-        <span className="mt-1 text-base font-extrabold text-brand">{formatPrice(product.price)}</span>
+        <span className="mt-1 text-base font-bold text-brand">{formatPrice(product.price)}</span>
 
         <button
           type="button"

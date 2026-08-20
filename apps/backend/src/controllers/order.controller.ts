@@ -69,3 +69,29 @@ export const pay = asyncHandler(async (req: Request, res: Response) => {
 
   res.json({ data: { gatewayUrl, authority } });
 });
+
+/**
+ * Public order tracking by id. Returns a deliberately minimal subset —
+ * status, timestamps, total and line-item titles/quantities — never the
+ * customer's name, phone or address (anyone with the id can call this).
+ */
+export const track = asyncHandler(async (req: Request, res: Response) => {
+  const detail = await orderService.getDetail(req.params.id as string);
+  if (!detail) throw ApiError.notFound('Order not found');
+
+  res.json({
+    data: {
+      id: detail.id,
+      status: detail.status,
+      totalAmount: detail.totalAmount,
+      createdAt: detail.createdAt,
+      refId: detail.refId,
+      items: detail.items.map((it) => ({
+        productId: it.productId,
+        title: it.productTitle,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+      })),
+    },
+  });
+});

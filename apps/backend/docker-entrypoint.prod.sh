@@ -7,10 +7,18 @@ set -e
 echo "[prod] Running migrations..."
 node dist/migrate.js
 
-if [ "${SEED_ON_BOOT:-false}" = "true" ]; then
-  echo "[prod] Seeding database..."
-  node dist/db/seed.js
-fi
+case "${SEED_ON_BOOT:-false}" in
+  admin)
+    # Provision ONLY the first admin (no demo products/orders).
+    echo "[prod] Creating admin user..."
+    node dist/db/create-admin.js
+    ;;
+  true)
+    # Full demo seed (owner + sample products + orders). Dev convenience.
+    echo "[prod] Seeding database..."
+    node dist/db/seed.js
+    ;;
+esac
 
 echo "[prod] Starting backend..."
 exec "$@"
