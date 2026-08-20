@@ -1,7 +1,11 @@
 import { createApp } from './app';
-import { env } from './config/env';
+import { env, validatePayments } from './config/env';
 import { client } from './db';
 import { redis } from './config/redis';
+
+// Crash loudly on payment misconfiguration BEFORE binding the port — a
+// production deploy with sandbox on / merchant ID unset must never serve.
+validatePayments();
 
 const app = createApp();
 
