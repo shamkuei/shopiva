@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import type { Product } from '@/lib/types';
 import { formatPrice, resolveImageUrl } from '@/lib/api';
@@ -49,7 +50,11 @@ export function ProductCard({ product }: { product: Product }) {
       </div>
 
       <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-lg font-semibold text-slate-900">{product.title}</h3>
+        <h3 className="text-lg font-semibold text-slate-900">
+          <Link href={`/products/${product.id}`} className="transition hover:text-brand">
+            {product.title}
+          </Link>
+        </h3>
         {product.description && (
           <p className="mt-1 line-clamp-2 flex-1 text-sm text-slate-500">{product.description}</p>
         )}

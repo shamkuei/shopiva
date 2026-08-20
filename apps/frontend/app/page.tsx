@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { ProductCard } from '@/components/ProductCard';
-import { CartBadge } from '@/components/CartBadge';
+import { Navbar } from '@/components/Navbar';
+import { Newsletter } from '@/components/Newsletter';
+import { SiteFooter } from '@/components/SiteFooter';
+import { PromoStrip } from '@/components/PromoStrip';
+import { HeroProductRail } from '@/components/HeroProductRail';
 import type { Product } from '@/lib/types';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:4000';
@@ -16,12 +20,33 @@ async function fetchJson<T>(path: string): Promise<T | null> {
   }
 }
 
+// ── Campaign content (edit per promotion) ─────────────────────
+const PROMO_CODE = 'WELCOME20';
+const PROMO_TEXT = '۲۰٪ تخفیف اولین خرید — کد:';
+const HERO_HEADLINE = 'جشنوارهٔ فروش ویژه';
+const HERO_SUBLINE =
+  'محصولات انتخاب‌شده با قیمت منصفانه، پرداخت امن و ارسال سریع — فقط تا پایان این هفته.';
+
+// How many products make it into the hero rail.
+const RAIL_SIZE = 8;
+
 export default async function Home() {
   const products = await fetchJson<Product[]>('/api/products');
   const backendDown = products === null;
+  // Featured rail: in-stock first, newest first.
+  const railProducts = (products ?? [])
+    .filter((p) => p.stock > 0)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, RAIL_SIZE);
 
   return (
     <div>
+      {/* ───────────── Campaign band ───────────── */}
+      <PromoStrip code={PROMO_CODE} text={PROMO_TEXT} />
+
+      {/* ───────────── Navbar ───────────── */}
+      <Navbar />
+
       {/* ───────────── Hero ───────────── */}
       <section className="relative overflow-hidden">
         {/* warm gradient backdrop */}
@@ -30,36 +55,46 @@ export default async function Home() {
         <div className="pointer-events-none absolute -right-24 -top-24 -z-10 h-80 w-80 rounded-full bg-brand/20 blur-3xl animate-blob" />
         <div className="pointer-events-none absolute -left-24 top-10 -z-10 h-72 w-72 rounded-full bg-accent/25 blur-3xl animate-blob [animation-delay:3s]" />
 
-        <div className="mx-auto max-w-6xl px-6 pt-10">
-          <div className="flex items-center justify-between">
-            <span className="inline-flex items-center gap-2 text-sm font-semibold text-brand">
-              <span className="h-2 w-2 rounded-full bg-brand" /> شاپیوا
-            </span>
-            <div className="flex items-center gap-3">
-              <CartBadge />
-              <Link href="/admin" className="text-sm font-semibold text-brand hover:underline">
-                پنل مدیریت
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="mx-auto max-w-3xl px-6 py-20 text-center sm:py-28">
-          <h1
-            className="text-display-2xl text-slate-900 animate-fade-up"
-            style={{ animationDelay: '0.05s' }}
+        <div className="mx-auto max-w-3xl px-6 py-16 text-center sm:py-20">
+          {/* campaign eyebrow */}
+          <span
+            className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-white/70 px-4 py-1.5 text-sm font-semibold text-brand backdrop-blur animate-fade-up"
+            style={{ animationDelay: '0.02s' }}
           >
-            {STORE_NAME}
+            <span aria-hidden>🔥</span> تخفیف تا ۲۰٪ — پایان در آخر هفته
+          </span>
+
+          <h1
+            className="mt-5 text-display-2xl text-slate-900 animate-fade-up"
+            style={{ animationDelay: '0.08s' }}
+          >
+            {HERO_HEADLINE}{' '}
+            <span className="relative inline-block text-brand">
+              {STORE_NAME}
+              {/* saffron marker swoosh under the highlighted word */}
+              <svg
+                className="absolute -bottom-2 right-0 w-full text-accent"
+                viewBox="0 0 200 12"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M3 9c40-5 120-7 194-3"
+                  stroke="currentColor"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
           </h1>
           <p
-            className="mx-auto mt-4 max-w-xl text-lg text-slate-600 animate-fade-up"
+            className="mx-auto mt-6 max-w-xl text-lg text-slate-600 animate-fade-up"
             style={{ animationDelay: '0.18s' }}
           >
-            بهترین‌هایتان را اینجا کشف کنید — محصولات انتخاب‌شده، قیمت منصفانه و
-            ارسال سریع تا دست شما.
+            {HERO_SUBLINE}
           </p>
           <div
-            className="mt-9 flex items-center justify-center gap-3 animate-fade-up"
+            className="mt-9 flex flex-wrap items-center justify-center gap-3 animate-fade-up"
             style={{ animationDelay: '0.3s' }}
           >
             <a
@@ -87,6 +122,11 @@ export default async function Home() {
             <span className="h-1 w-1 rounded-full bg-slate-300" />
             <span>✨ ضمانت اصالت</span>
           </div>
+        </div>
+
+        {/* ───────────── Featured product rail ───────────── */}
+        <div className="relative mx-auto max-w-6xl px-6 pb-14">
+          <HeroProductRail products={railProducts} />
         </div>
       </section>
 
@@ -123,6 +163,12 @@ export default async function Home() {
           </p>
         )}
       </section>
+
+      {/* ───────────── Newsletter ───────────── */}
+      <Newsletter />
+
+      {/* ───────────── Footer ───────────── */}
+      <SiteFooter />
     </div>
   );
 }
