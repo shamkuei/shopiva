@@ -51,6 +51,8 @@ export const env = {
   zarinpalCallbackUrl:
     process.env.ZARINPAL_CALLBACK_URL ?? 'http://localhost:4000/api/payments/callback',
   webUrl: process.env.WEB_URL ?? 'http://localhost:3000',
+  // Pending orders older than this are cancelled + restocked by the sweep.
+  pendingOrderTtlMinutes: parseInt(process.env.PENDING_ORDER_TTL_MIN ?? '60', 10),
 } as const;
 
 /**

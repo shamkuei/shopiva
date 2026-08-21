@@ -147,6 +147,8 @@ describe('GET /api/admin/orders/:id', () => {
 
 describe('PUT /api/admin/orders/:id/status', () => {
   it('updates the status', async () => {
+    // updateStatus now reads the order first (state machine), then updates.
+    state.selectResults.set(orders, [order('o1', 'paid')]);
     state.updateResults.set(orders, [order('o1', 'shipped')]);
     const res = await request.put('/api/admin/orders/o1/status').set(withAuth()).send({ status: 'shipped' });
     expect(res.status).toBe(200);
@@ -154,9 +156,16 @@ describe('PUT /api/admin/orders/:id/status', () => {
   });
 
   it('returns 404 when not found', async () => {
+    state.selectResults.set(orders, []);
     state.updateResults.set(orders, []);
     const res = await request.put('/api/admin/orders/oX/status').set(withAuth()).send({ status: 'shipped' });
     expect(res.status).toBe(404);
+  });
+
+  it('rejects an illegal transition with 409 (paid -> pending)', async () => {
+    state.selectResults.set(orders, [order('o1', 'paid')]);
+    const res = await request.put('/api/admin/orders/o1/status').set(withAuth()).send({ status: 'pending' });
+    expect(res.status).toBe(409);
   });
 
   it('rejects an invalid status (400)', async () => {

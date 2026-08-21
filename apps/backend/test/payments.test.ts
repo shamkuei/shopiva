@@ -87,11 +87,15 @@ const pendingOrder = () => ({
   id: 'order-1',
   status: 'pending',
   totalAmount: '1500.00',
+  discountAmount: '0.00',
+  discountCode: null,
   customerName: 'Jane',
   customerPhone: null,
   customerAddress: null,
   authority: null,
   refId: null,
+  paidAt: null,
+  shippedAt: null,
   createdAt: new Date(),
 });
 
@@ -104,10 +108,16 @@ describe('POST /api/orders/:id/pay (start payment)', () => {
     expect(res.body.data.gatewayUrl).toContain('A000123');
   });
 
-  it('rejects an already-paid order with 400', async () => {
+  it('rejects an already-paid order with 409', async () => {
     state.selectResults.set(orders, [{ ...pendingOrder(), status: 'paid' }]);
     const res = await request.post('/api/orders/order-1/pay').send({});
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
+  });
+
+  it('rejects a shipped order with 409 (no re-paying)', async () => {
+    state.selectResults.set(orders, [{ ...pendingOrder(), status: 'shipped' }]);
+    const res = await request.post('/api/orders/order-1/pay').send({});
+    expect(res.status).toBe(409);
   });
 
   it('returns 502 when the gateway refuses to issue an authority', async () => {
@@ -120,7 +130,8 @@ describe('POST /api/orders/:id/pay (start payment)', () => {
 
 describe('GET /api/payments/callback (verify)', () => {
   it('verifies, marks paid, and redirects to the success page', async () => {
-    state.selectResults.set(orders, [pendingOrder()]);
+    // The order must carry the authority the gateway issued at pay time.
+    state.selectResults.set(orders, [{ ...pendingOrder(), authority: 'A000123' }]);
     fetchMock.mockResolvedValue(jsonResponse({ data: { code: 100, ref_id: 12345 }, errors: [] }));
 
     const res = await request

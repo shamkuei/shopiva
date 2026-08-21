@@ -138,7 +138,7 @@ describe('customer -> order -> Zarinpal amount consistency', () => {
     // 1) Create the order. createOrder computes the total from DB prices.
     state.selectResults.set(products, [p1, p2]);
     state.insertResults.set(orders, [
-      { id: 'order-1', status: 'pending', totalAmount: String(expectedToman), customerName: 'Jane', customerPhone: null, customerAddress: null, authority: null, refId: null, createdAt: new Date() },
+      { id: 'order-1', status: 'pending', totalAmount: String(expectedToman), discountAmount: '0.00', discountCode: null, customerName: 'Jane', customerPhone: null, customerAddress: null, authority: null, refId: null, paidAt: null, shippedAt: null, createdAt: new Date() },
     ]);
 
     const createRes = await request.post('/api/orders').send({
@@ -153,7 +153,11 @@ describe('customer -> order -> Zarinpal amount consistency', () => {
     expect(Number.isInteger(orderToman)).toBe(true);
 
     // 2) Start payment -> Zarinpal request.
-    state.selectResults.set(orders, [createRes.body.data]);
+    // After pay() records the authority, subsequent order reads (the callback
+    // re-reads it) must return the authority the gateway issued.
+    state.selectResults.set(orders, [
+      { ...(createRes.body.data as object), authority: 'A0001' } as never,
+    ]);
     fetchMock.mockResolvedValue(jsonResponse({ data: { code: 100, authority: 'A0001' }, errors: [] }));
 
     const payRes = await request.post('/api/orders/order-1/pay').send({});

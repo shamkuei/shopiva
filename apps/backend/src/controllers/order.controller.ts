@@ -57,7 +57,11 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
 export const pay = asyncHandler(async (req: Request, res: Response) => {
   const order = await orderService.getOrderById(req.params.id as string);
   if (!order) throw ApiError.notFound('Order not found');
-  if (order.status === 'paid') throw ApiError.badRequest('Order is already paid');
+  // Only pending or failed-retry orders can start a payment. This blocks
+  // re-paying shipped/cancelled orders outright.
+  if (order.status !== 'pending' && order.status !== 'failed') {
+    throw ApiError.conflict(`Cannot pay an order that is ${order.status}`);
+  }
 
   // The PAYABLE amount (gross − discount) is in Toman (the app's unit).
   // Zarinpal needs ≥ 1000 Toman.

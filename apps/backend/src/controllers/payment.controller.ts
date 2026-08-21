@@ -45,7 +45,16 @@ export const callback = asyncHandler(async (req: Request, res: Response) => {
     return res.redirect(resultUrl(order.id, 'failed'));
   }
 
-  const tomanAmount = Math.round(Number(order.totalAmount));
+  // The authority must be the one Zarinpal issued for THIS order (recorded at
+  // pay time). A mismatched/spare authority must never mark an order paid.
+  if (!order.authority || order.authority !== authority) {
+    await orderService.markFailed(order.id);
+    return res.redirect(resultUrl(order.id, 'failed'));
+  }
+
+  // The verify amount is the PAYABLE total (gross − discount), identical to
+  // the amount used at request time.
+  const tomanAmount = Math.round(Number(order.totalAmount) - Number(order.discountAmount ?? 0));
 
   // If the gateway call itself blows up, treat it as a failed payment so the
   // user still lands on a result page rather than a JSON 500.
@@ -59,7 +68,11 @@ export const callback = asyncHandler(async (req: Request, res: Response) => {
   }
 
   if (result.verified) {
-    await orderService.markPaid(order.id, result.refId);
+    try {
+      await orderService.markPaid(order.id, result.refId, authority);
+    } catch {
+      // e.g. already paid via a concurrent callback — treat as success.
+    }
     return res.redirect(resultUrl(order.id, 'paid', result.refId));
   }
 

@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, lt, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { orders, orderItems, products, type Order } from '../db/schema';
 import { ApiError } from '../utils/ApiError';
@@ -12,6 +12,23 @@ export const ORDER_STATUSES: OrderStatus[] = [
   'shipped',
   'cancelled',
 ];
+
+/**
+ * Order state machine. Every transition must be listed here; anything else is
+ * a 409. Terminal states (shipped/cancelled) have no outgoing edges.
+ *
+ *   pending ──▶ paid ──▶ shipped
+ *      │
+ *      ├──▶ failed ──▶ pending   (customer retries payment)
+ *      └──▶ cancelled
+ */
+const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
+  pending: ['paid', 'failed', 'cancelled'],
+  paid: ['shipped', 'cancelled'],
+  failed: ['pending', 'cancelled'],
+  shipped: [],
+  cancelled: [],
+};
 
 export interface OrderItemInput {
   productId: string;
@@ -37,6 +54,29 @@ export type OrderDetail = Order & {
 };
 
 export const orderService = {
+  /** State-machine check: may `from` move to `to`? */
+  canTransition(from: OrderStatus, to: OrderStatus): boolean {
+    return ALLOWED_TRANSITIONS[from].includes(to);
+  },
+
+  /**
+   * Restore the reserved stock of an order's items (SQL-side math). Called
+   * when an order leaves the stock-holding states — a cancelled or
+   * expired-abandoned order must give its inventory back.
+   */
+  async restoreStock(orderId: string): Promise<void> {
+    const items = await db
+      .select({ productId: orderItems.productId, quantity: orderItems.quantity })
+      .from(orderItems)
+      .where(eq(orderItems.orderId, orderId));
+
+    for (const item of items) {
+      await db
+        .update(products)
+        .set({ stock: sql`${products.stock} + ${item.quantity}` })
+        .where(eq(products.id, item.productId));
+    }
+  },
   /**
    * Create an Order + its OrderItems in a single transaction.
    * Products are locked FOR UPDATE (prevent overselling), prices come from the
@@ -135,20 +175,48 @@ export const orderService = {
     await db.update(orders).set({ authority }).where(eq(orders.id, orderId));
   },
 
-  async markPaid(orderId: string, refId?: string): Promise<void> {
-    const [order] = await db
+  /**
+   * Mark an order paid (payment-verified path). Guards: the order must be
+   * `pending` (or a `failed` retry) and the callback's authority must match
+   * the one the gateway issued for THIS order — a mismatched or replayed
+   * authority is rejected, closing the verification gap.
+   */
+  async markPaid(orderId: string, refId?: string, expectAuthority?: string): Promise<Order | null> {
+    const order = await this.getOrderById(orderId);
+    if (!order) return null;
+
+    if (expectAuthority && order.authority && order.authority !== expectAuthority) {
+      throw ApiError.badRequest('Payment authority does not match this order');
+    }
+    if (!this.canTransition(order.status, 'paid')) {
+      throw ApiError.conflict(`Cannot mark a ${order.status} order as paid`);
+    }
+
+    const [updated] = await db
       .update(orders)
       .set({ status: 'paid', refId: refId ?? null, paidAt: new Date() })
       .where(eq(orders.id, orderId))
       .returning();
+
     // Count the coupon redemption only once payment actually succeeded.
-    if (order?.discountCode) {
-      await couponService.recordRedemption(order.discountCode);
+    if (updated?.discountCode) {
+      await couponService.recordRedemption(updated.discountCode);
     }
+    return updated ?? null;
   },
 
-  async markFailed(orderId: string): Promise<void> {
-    await db.update(orders).set({ status: 'failed' }).where(eq(orders.id, orderId));
+  /** Mark an order failed (gateway rejection/cancel). Stock stays reserved —
+   *  the customer may retry payment from the failed state. */
+  async markFailed(orderId: string): Promise<Order | null> {
+    const order = await this.getOrderById(orderId);
+    if (!order || !this.canTransition(order.status, 'failed')) return order ?? null;
+
+    const [updated] = await db
+      .update(orders)
+      .set({ status: 'failed' })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return updated ?? null;
   },
 
   // ── Admin ──────────────────────────────────────────────────────
@@ -191,7 +259,18 @@ export const orderService = {
     return row?.count ?? 0;
   },
 
+  /**
+   * Admin status change, constrained by the state machine. Cancelling an
+   * order that still holds stock (pending/paid/failed) restores it.
+   */
   async updateStatus(orderId: string, status: OrderStatus): Promise<Order | null> {
+    const order = await this.getOrderById(orderId);
+    if (!order) return null;
+
+    if (!this.canTransition(order.status, status)) {
+      throw ApiError.conflict(`Cannot change order from ${order.status} to ${status}`);
+    }
+
     // Stamp the real event time so the tracking timeline never fabricates dates.
     const patch: Partial<typeof orders.$inferInsert> = { status };
     if (status === 'paid') patch.paidAt = new Date();
@@ -202,6 +281,35 @@ export const orderService = {
       .set(patch)
       .where(eq(orders.id, orderId))
       .returning();
+
+    // Leaving the stock-holding states for `cancelled` gives inventory back.
+    if (status === 'cancelled' && row) {
+      await this.restoreStock(orderId);
+    }
     return row ?? null;
+  },
+
+  /**
+   * Expire pending orders older than `ttlMinutes`: mark them cancelled and
+   * restore their stock. Returns the ids of the expired orders. Safe to run
+   * repeatedly — already-expired orders no longer match the filter.
+   */
+  async expirePendingOrders(ttlMinutes: number): Promise<string[]> {
+    const cutoff = new Date(Date.now() - ttlMinutes * 60 * 1000);
+    const stale = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(and(eq(orders.status, 'pending'), lt(orders.createdAt, cutoff)));
+
+    const expired: string[] = [];
+    for (const { id } of stale) {
+      try {
+        await this.updateStatus(id, 'cancelled');
+        expired.push(id);
+      } catch {
+        // Raced with a payment/other transition — fine, it's no longer stale.
+      }
+    }
+    return expired;
   },
 };
