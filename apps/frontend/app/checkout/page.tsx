@@ -6,8 +6,11 @@ import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { useCart, selectCartTotal } from '@/lib/cartStore';
 import { useHydrated } from '@/lib/useHydrated';
-import { apiStorePost, formatPrice, resolveImageUrl } from '@/lib/api';
+import { apiStorePost, apiFetch, formatPrice, resolveImageUrl } from '@/lib/api';
 import type { Order } from '@/lib/types';
+
+/** Preview response of GET /api/coupons/:code. */
+type CouponView = { code: string; percentOff: number };
 
 const inputCls =
   'mt-1.5 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25';
@@ -52,6 +55,33 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // ── Coupon state ──
+  const [couponInput, setCouponInput] = useState('');
+  const [coupon, setCoupon] = useState<CouponView | null>(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponChecking, setCouponChecking] = useState(false);
+
+  const discount = coupon ? Math.floor((total * coupon.percentOff) / 100) : 0;
+  const payable = Math.max(0, total - discount);
+
+  async function applyCoupon() {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponChecking(true);
+    setCouponError('');
+    try {
+      const view = await apiFetch<CouponView>(`/api/coupons/${encodeURIComponent(code)}`);
+      setCoupon(view);
+    } catch (err) {
+      setCoupon(null);
+      setCouponError(
+        err instanceof Error ? err.message : 'اعتبارسنجی کد تخفیف ناموفق بود.',
+      );
+    } finally {
+      setCouponChecking(false);
+    }
+  }
+
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (items.length === 0) return;
@@ -62,7 +92,8 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError('');
     try {
-      // ۱. ثبت سفارش (وضعیت: در انتظار).
+      // ۱. ثبت سفارش (وضعیت: در انتظار). کد تخفیف در سرور اعتبارسنجی و
+      //    اعمال می‌شود — این فقط ارسال آن است.
       const order = await apiStorePost<Order>('/api/orders', {
         items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
         customer: {
@@ -72,6 +103,7 @@ export default function CheckoutPage() {
             ? `${address.trim()} — کدپستی: ${postalCode.trim()}`
             : address.trim(),
         },
+        discountCode: coupon?.code,
       });
 
       // ۲. شروع پرداخت و انتقال به درگاه زرین‌پال. سبد فقط پس از تأیید پرداخت
@@ -244,7 +276,7 @@ export default function CheckoutPage() {
               </svg>
               {submitting
                 ? 'در حال انتقال به درگاه…'
-                : `پرداخت ${formatPrice(total.toFixed(2))}`}
+                : `پرداخت ${formatPrice(payable.toFixed(2))}`}
             </button>
           </form>
 
@@ -279,9 +311,68 @@ export default function CheckoutPage() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-4 flex justify-between border-t-2 border-slate-900 pt-4 text-lg font-bold text-slate-900">
-                <span>مجموع</span>
-                <span>{formatPrice(total.toFixed(2))}</span>
+
+              {/* کد تخفیف */}
+              {coupon ? (
+                <div className="mt-4 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 text-sm">
+                  <span className="flex items-center gap-2 text-emerald-700">
+                    <strong className="font-mono">{coupon.code}</strong>
+                    ({coupon.percentOff.toLocaleString('fa-IR')}٪ تخفیف)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCoupon(null);
+                      setCouponInput('');
+                    }}
+                    className="text-xs text-emerald-700 underline"
+                  >
+                    حذف
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      placeholder="کد تخفیف"
+                      aria-label="کد تخفیف"
+                      className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 font-mono text-sm uppercase outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/25"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      disabled={couponChecking || !couponInput.trim()}
+                      className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand hover:text-brand disabled:opacity-50"
+                    >
+                      {couponChecking ? '…' : 'اعمال'}
+                    </button>
+                  </div>
+                  {couponError && (
+                    <p className="mt-2 text-xs text-rose-600">{couponError}</p>
+                  )}
+                </div>
+              )}
+
+              {/* جمع‌بندی */}
+              <div className="mt-4 space-y-1.5 border-t border-slate-200 pt-4 text-sm">
+                <div className="flex justify-between text-slate-500">
+                  <span>جمع کل</span>
+                  <span>{formatPrice(total.toFixed(2))}</span>
+                </div>
+                {coupon && (
+                  <div className="flex justify-between text-emerald-700">
+                    <span>تخفیف ({coupon.code})</span>
+                    <span>−{formatPrice(discount.toFixed(2))}</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-2 flex justify-between border-t-2 border-slate-900 pt-3 text-lg font-bold text-slate-900">
+                <span>مبلغ قابل پرداخت</span>
+                <span>{formatPrice(payable.toFixed(2))}</span>
               </div>
             </div>
           </aside>

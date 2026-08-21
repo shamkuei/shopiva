@@ -22,6 +22,27 @@
       "when": 1786484496476,
       "tag": "0002_drop_multi_tenancy",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787217794667,
+      "tag": "0003_good_unicorn",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787228773021,
+      "tag": "0004_stormy_felicia_hardy",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787249335472,
+      "tag": "0005_windy_corsair",
+      "breakpoints": true
     }
   ]
 }

@@ -2,6 +2,7 @@ import { desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { orders, orderItems, products, type Order } from '../db/schema';
 import { ApiError } from '../utils/ApiError';
+import { couponService } from './coupon.service';
 
 export type OrderStatus = 'pending' | 'paid' | 'failed' | 'shipped' | 'cancelled';
 export const ORDER_STATUSES: OrderStatus[] = [
@@ -20,6 +21,8 @@ export interface OrderItemInput {
 export interface CreateOrderInput {
   items: OrderItemInput[];
   customer: { name: string; phone?: string | null; address?: string | null };
+  /** Optional discount code; validated + applied server-side. */
+  discountCode?: string;
 }
 
 export type OrderDetail = Order & {
@@ -72,11 +75,28 @@ export const orderService = {
         });
       }
 
+      // Optional discount: validated and applied INSIDE the same transaction
+      // (row-locked) so the stored amounts are always server-authoritative.
+      let discountAmount = 0;
+      let discountCode: string | null = null;
+      if (input.discountCode?.trim()) {
+        const applied = await couponService.applyWithinTransaction(
+          tx,
+          input.discountCode,
+          total,
+        );
+        discountAmount = applied.discountAmount;
+        discountCode = applied.code;
+      }
+
       const [order] = await tx
         .insert(orders)
         .values({
           status: 'pending',
+          // Gross subtotal; payable = totalAmount − discountAmount.
           totalAmount: total.toFixed(2),
+          discountAmount: discountAmount.toFixed(2),
+          discountCode,
           customerName: input.customer.name,
           customerPhone: input.customer.phone ?? null,
           customerAddress: input.customer.address ?? null,
@@ -116,10 +136,15 @@ export const orderService = {
   },
 
   async markPaid(orderId: string, refId?: string): Promise<void> {
-    await db
+    const [order] = await db
       .update(orders)
-      .set({ status: 'paid', refId: refId ?? null })
-      .where(eq(orders.id, orderId));
+      .set({ status: 'paid', refId: refId ?? null, paidAt: new Date() })
+      .where(eq(orders.id, orderId))
+      .returning();
+    // Count the coupon redemption only once payment actually succeeded.
+    if (order?.discountCode) {
+      await couponService.recordRedemption(order.discountCode);
+    }
   },
 
   async markFailed(orderId: string): Promise<void> {
@@ -167,9 +192,14 @@ export const orderService = {
   },
 
   async updateStatus(orderId: string, status: OrderStatus): Promise<Order | null> {
+    // Stamp the real event time so the tracking timeline never fabricates dates.
+    const patch: Partial<typeof orders.$inferInsert> = { status };
+    if (status === 'paid') patch.paidAt = new Date();
+    if (status === 'shipped') patch.shippedAt = new Date();
+
     const [row] = await db
       .update(orders)
-      .set({ status })
+      .set(patch)
       .where(eq(orders.id, orderId))
       .returning();
     return row ?? null;

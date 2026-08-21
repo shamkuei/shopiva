@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { hash } from 'bcryptjs';
 import { db, client } from './index';
-import { users, products, orders, orderItems, type Product } from './schema';
+import { users, products, orders, orderItems, coupons, type Product } from './schema';
 
 /**
  * Template seed for the single store — populates the DB so you can see every
@@ -10,6 +10,7 @@ import { users, products, orders, orderItems, type Product } from './schema';
  *   - owner: OWNER_EMAIL / OWNER_PASSWORD env (dev default: owner@shopiva.test / password123)
  *   - 8 Persian products (Toman pricing)
  *   - 6 orders across all statuses (pending/paid/shipped/cancelled)
+ *   - WELCOME20 coupon (20% off) — matches the storefront's promo strip
  *
  * Idempotent: re-running won't duplicate. Run with: `npm run db:seed`.
  * For production use `npm run create-admin` instead of the demo-data seed.
@@ -101,8 +102,16 @@ async function seedOrders(prods: Product[]) {
   }
 }
 
+/** The promo code the storefront hero advertises (apps/frontend/app/page.tsx). */
+async function ensureCoupon() {
+  const existing = await db.select().from(coupons).where(eq(coupons.code, 'WELCOME20')).limit(1);
+  if (existing[0]) return;
+  await db.insert(coupons).values({ code: 'WELCOME20', percentOff: 20, active: true });
+}
+
 async function main() {
   await ensureOwner();
+  await ensureCoupon();
   const prods = await seedProducts();
   await seedOrders(prods);
   console.log(`[seed] done — login as ${OWNER_EMAIL} (password from OWNER_PASSWORD env)`);

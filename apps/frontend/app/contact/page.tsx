@@ -2,17 +2,20 @@ import type { Metadata } from 'next';
 import { Navbar } from '@/components/Navbar';
 import { SiteFooter } from '@/components/SiteFooter';
 import { ContactForm } from '@/components/ContactForm';
+import { storeInfo } from '@/lib/storeInfo';
 
 export const metadata: Metadata = {
   title: 'تماس با ما | شاپیوا',
   description: 'سؤال، بازخورد یا نیاز به پشتیبانی دارید؟ با تیم شاپیوا در تماس باشید.',
 };
 
-/** کارت‌های اطلاعات تماس — آیکون + برچسب + مقدار */
+/** کارت‌های اطلاعات تماس — مقادیر از متغیرهای محیطی می‌آیند؛
+ *  آنچه تنظیم نشده باشد به‌جای مقدار ساختگی، راهنمای فرم نشان می‌دهد. */
 const INFO_CARDS = [
   {
     label: 'ایمیل',
-    value: 'support@shopiva.ir',
+    value: storeInfo.email,
+    fallback: 'از فرم زیر برای ما پیام بفرستید.',
     icon: (
       <>
         <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -22,12 +25,14 @@ const INFO_CARDS = [
   },
   {
     label: 'تلفن',
-    value: '۰۲۱-۱۲۳۴۵۶۷۸',
+    value: storeInfo.phone,
+    fallback: 'در ساعات کاری از فرم پاسخ می‌دهیم.',
     icon: <path d="M5 4h4l2 5-3 2a12 12 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />,
   },
   {
     label: 'نشانی',
-    value: 'تهران، خیابان ولیعصر، مرکز نوآوری',
+    value: storeInfo.address,
+    fallback: 'ارسال به آدرسی که هنگام خرید وارد می‌کنید.',
     icon: (
       <>
         <path
@@ -40,7 +45,8 @@ const INFO_CARDS = [
   },
   {
     label: 'ساعات کاری',
-    value: 'شنبه تا پنجشنبه، ۹ تا ۱۸',
+    value: storeInfo.hours,
+    fallback: 'پاسخ پیام‌ها معمولاً ظرف یک روز کاری.',
     icon: (
       <>
         <circle cx="12" cy="12" r="9" />
@@ -48,7 +54,7 @@ const INFO_CARDS = [
       </>
     ),
   },
-] as const;
+];
 
 const FAQS = [
   {
@@ -57,7 +63,7 @@ const FAQS = [
   },
   {
     q: 'چطور سفارشم را پیگیری کنم؟',
-    a: 'پس از پرداخت موفق، شمارهٔ سفارش را دریافت می‌کنید و می‌توانید وضعیت آن را از پنل مدیریت فروشگاه بررسی کنید.',
+    a: 'پس از پرداخت موفق، شمارهٔ سفارش را دریافت می‌کنید و می‌توانید وضعیت آن را از صفحهٔ «پیگیری سفارش» در پایین سایت بررسی کنید.',
   },
   {
     q: 'سیاست بازگشت کالا چیست؟',
@@ -88,7 +94,7 @@ export default function ContactPage() {
         {/* اطلاعات + فرم */}
         <div className="grid items-start gap-6 py-10 lg:grid-cols-[20rem_1fr]">
           <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-card">
-            {INFO_CARDS.map(({ label, value, icon }, i) => (
+            {INFO_CARDS.map(({ label, value, fallback, icon }, i) => (
               <div
                 key={label}
                 className={`flex gap-3 py-4 ${i > 0 ? 'border-t border-slate-200' : ''}`}
@@ -111,26 +117,17 @@ export default function ContactPage() {
                   <div className="text-xs font-medium uppercase tracking-wider text-slate-400">
                     {label}
                   </div>
-                  <div className="mt-0.5 font-semibold text-slate-900">{value}</div>
+                  {value ? (
+                    <div className="mt-0.5 font-semibold text-slate-900">{value}</div>
+                  ) : (
+                    <div className="mt-0.5 text-sm text-slate-400">{fallback}</div>
+                  )}
                 </div>
               </div>
             ))}
           </aside>
 
           <ContactForm />
-        </div>
-
-        {/* نقشه (جای‌نگهدار) */}
-        <div
-          role="img"
-          aria-label="نقشهٔ موقعیت فروشگاه در تهران"
-          className="relative grid aspect-[21/8] place-items-center overflow-hidden rounded-3xl bg-gradient-to-br from-brand/10 to-accent/20"
-        >
-          <span className="grid h-14 w-14 place-items-center rounded-full bg-brand text-white shadow-warm">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-              <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
-            </svg>
-          </span>
         </div>
 
         {/* سؤالات متداول */}

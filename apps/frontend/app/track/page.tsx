@@ -13,7 +13,11 @@ type TrackedOrder = {
   id: string;
   status: OrderStatus;
   totalAmount: string;
+  discountAmount?: string;
+  discountCode?: string | null;
   createdAt: string;
+  paidAt?: string | null;
+  shippedAt?: string | null;
   refId: string | null;
   items: { productId: string; title: string; quantity: number; unitPrice: string }[];
 };
@@ -148,14 +152,13 @@ function StatusStepper({ status }: { status: OrderStatus }) {
   );
 }
 
-function Timeline({ status, createdAt }: { status: OrderStatus; createdAt: string }) {
-  const created = new Date(createdAt);
-  const events: { title: string; time: Date; done: boolean }[] = [
-    { title: 'ثبت سفارش', time: created, done: true },
+/** رویدادها فقط از زمان‌های واقعی دیتابیس ساخته می‌شوند — هیچ زمانی جعل نمی‌شود. */
+function Timeline({ order }: { order: TrackedOrder }) {
+  const events: { title: string; time: Date }[] = [
+    { title: 'ثبت سفارش', time: new Date(order.createdAt) },
   ];
-  if (status !== 'pending') {
-    events.push({ title: STATUS_LABELS[status], time: created, done: status === 'shipped' });
-  }
+  if (order.paidAt) events.push({ title: 'پرداخت تأیید شد', time: new Date(order.paidAt) });
+  if (order.shippedAt) events.push({ title: 'ارسال شد', time: new Date(order.shippedAt) });
 
   return (
     <div>
@@ -171,7 +174,7 @@ function Timeline({ status, createdAt }: { status: OrderStatus; createdAt: strin
             )}
             <span
               className={`relative z-10 col-span-1 grid h-6 w-6 place-items-center rounded-full text-white ${
-                ev.done || i === 0 ? 'bg-emerald-500' : 'bg-brand'
+                i === 0 ? 'bg-emerald-500' : 'bg-brand'
               }`}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden>
@@ -254,7 +257,7 @@ function TrackPageInner() {
 
                 <StatusStepper status={order.status} />
                 <div className="border-t border-slate-200 pt-5">
-                  <Timeline status={order.status} createdAt={order.createdAt} />
+                  <Timeline order={order} />
                 </div>
                 <button
                   type="button"
@@ -281,10 +284,28 @@ function TrackPageInner() {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-4 flex justify-between border-t border-slate-100 pt-3 text-sm font-bold text-slate-900">
+                  {order.discountCode && Number(order.discountAmount ?? 0) > 0 && (
+                    <div className="mt-3 flex justify-between text-sm text-emerald-700">
+                      <span>تخفیف ({order.discountCode})</span>
+                      <span>−{formatPrice(order.discountAmount!)}</span>
+                    </div>
+                  )}
+                  <div className="mt-2 flex justify-between border-t border-slate-100 pt-3 text-sm font-bold text-slate-900">
                     <span>مجموع</span>
                     <span>{formatPrice(order.totalAmount)}</span>
                   </div>
+                  {order.discountCode && Number(order.discountAmount ?? 0) > 0 && (
+                    <div className="mt-1 flex justify-between text-sm text-slate-500">
+                      <span>مبلغ قابل پرداخت</span>
+                      <span>
+                        {formatPrice(
+                          (Number(order.totalAmount) - Number(order.discountAmount ?? 0)).toFixed(
+                            2,
+                          ),
+                        )}
+                      </span>
+                    </div>
+                  )}
                   {order.refId && (
                     <p className="mt-3 text-xs text-slate-400" dir="ltr">
                       ref: {order.refId}

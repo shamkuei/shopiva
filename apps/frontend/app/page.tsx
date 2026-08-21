@@ -21,11 +21,13 @@ async function fetchJson<T>(path: string): Promise<T | null> {
 }
 
 // ── Campaign content (edit per promotion) ─────────────────────
+// The coupon is REAL: WELCOME20 is seeded in the backend and honored at
+// checkout (server-side). Keep this in sync with apps/backend/src/db/seed.ts.
 const PROMO_CODE = 'WELCOME20';
 const PROMO_TEXT = '۲۰٪ تخفیف اولین خرید — کد:';
 const HERO_HEADLINE = 'جشنوارهٔ فروش ویژه';
 const HERO_SUBLINE =
-  'محصولات انتخاب‌شده با قیمت منصفانه، پرداخت امن و ارسال سریع — فقط تا پایان این هفته.';
+  'محصولات انتخاب‌شده با قیمت منصفانه، پرداخت امن و ارسال سریع.';
 
 // How many products make it into the hero rail.
 const RAIL_SIZE = 8;
@@ -61,7 +63,7 @@ export default async function Home() {
             className="inline-flex items-center gap-2 rounded-full border border-brand/20 bg-white/70 px-4 py-1.5 text-sm font-semibold text-brand backdrop-blur animate-fade-up"
             style={{ animationDelay: '0.02s' }}
           >
-            <span aria-hidden>🔥</span> تخفیف تا ۲۰٪ — پایان در آخر هفته
+            <span aria-hidden>🔥</span> ۲۰٪ تخفیف اولین خرید با کد WELCOME20
           </span>
 
           <h1

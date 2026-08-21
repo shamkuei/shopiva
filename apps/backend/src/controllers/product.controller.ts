@@ -4,8 +4,11 @@ import { ApiError } from '../utils/ApiError';
 import { productService } from '../services/product.service';
 
 /** Public storefront: list + fetch a single product. */
-export const listProducts = asyncHandler(async (_req: Request, res: Response) => {
-  res.json({ data: await productService.list() });
+export const listProducts = asyncHandler(async (req: Request, res: Response) => {
+  // Express 5 types query values as string | string[] | ParsedQs.
+  const raw = req.query.search;
+  const search = typeof raw === 'string' ? raw : undefined;
+  res.json({ data: await productService.list(search) });
 });
 
 export const getProduct = asyncHandler(async (req: Request, res: Response) => {

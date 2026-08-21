@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import type { Product } from '@/lib/types';
 import { ProductCard } from '@/components/ProductCard';
 
@@ -153,9 +154,17 @@ function FilterGroups({
   );
 }
 
-/** مرور فروشگاه — فیلتر، مرتب‌سازی و صفحه‌بندی سمت کلاینت روی کل لیست محصولات. */
-export function ShopBrowser({ products }: { products: Product[] }) {
-  const [state, setState] = useState<FilterState>(EMPTY_FILTERS);
+/** مرور فروشگاه — فیلتر، مرتب‌سازی و صفحه‌بندی سمت کلاینت روی نتایج سرور. */
+export function ShopBrowser({
+  products,
+  initialSort = 'newest',
+  searchQuery = '',
+}: {
+  products: Product[];
+  initialSort?: FilterState['sort'];
+  searchQuery?: string;
+}) {
+  const [state, setState] = useState<FilterState>({ ...EMPTY_FILTERS, sort: initialSort });
   const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -261,6 +270,21 @@ export function ShopBrowser({ products }: { products: Product[] }) {
           </select>
         </div>
       </div>
+
+      {/* زمینهٔ جستجو — وقتی از نوار بالا جستجو شده باشد */}
+      {searchQuery && (
+        <div className="flex items-center gap-3 border-b border-slate-200 py-4 text-sm">
+          <span className="text-slate-500">
+            نتایج جستجو برای <strong className="text-slate-900">«{searchQuery}»</strong>
+          </span>
+          <Link
+            href="/products"
+            className="rounded-lg border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-brand hover:text-brand"
+          >
+            پاک کردن جستجو ✕
+          </Link>
+        </div>
+      )}
 
       <div className="grid items-start gap-6 py-8 lg:grid-cols-[16rem_1fr]">
         {/* سایدبار دسکتاپ */}

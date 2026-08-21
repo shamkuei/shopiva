@@ -7,7 +7,11 @@ import * as zarinpalService from '../services/zarinpal.service';
 
 /** Public checkout: create an Order + OrderItems (status `pending`). */
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
-  const { items, customer } = (req.body ?? {}) as { items?: unknown; customer?: unknown };
+  const { items, customer, discountCode } = (req.body ?? {}) as {
+    items?: unknown;
+    customer?: unknown;
+    discountCode?: unknown;
+  };
 
   if (!Array.isArray(items) || items.length === 0) {
     throw ApiError.badRequest('items must be a non-empty array');
@@ -35,7 +39,14 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     address: typeof c.address === 'string' && c.address.trim() ? c.address.trim() : null,
   };
 
-  const order = await orderService.createOrder({ items: cleanItems, customer: cleanCustomer });
+  const cleanDiscountCode =
+    typeof discountCode === 'string' && discountCode.trim() ? discountCode.trim() : undefined;
+
+  const order = await orderService.createOrder({
+    items: cleanItems,
+    customer: cleanCustomer,
+    discountCode: cleanDiscountCode,
+  });
   res.status(201).json({ data: order });
 });
 
@@ -48,8 +59,9 @@ export const pay = asyncHandler(async (req: Request, res: Response) => {
   if (!order) throw ApiError.notFound('Order not found');
   if (order.status === 'paid') throw ApiError.badRequest('Order is already paid');
 
-  // The order total is in Toman (the app's unit). Zarinpal needs ≥ 1000 Toman.
-  const tomanAmount = Math.round(Number(order.totalAmount));
+  // The PAYABLE amount (gross − discount) is in Toman (the app's unit).
+  // Zarinpal needs ≥ 1000 Toman.
+  const tomanAmount = Math.round(Number(order.totalAmount) - Number(order.discountAmount ?? 0));
   if (!Number.isFinite(tomanAmount) || tomanAmount < 1000) {
     throw ApiError.badRequest('Order amount is below the Zarinpal minimum (1000 Toman)');
   }
@@ -84,7 +96,11 @@ export const track = asyncHandler(async (req: Request, res: Response) => {
       id: detail.id,
       status: detail.status,
       totalAmount: detail.totalAmount,
+      discountAmount: detail.discountAmount,
+      discountCode: detail.discountCode,
       createdAt: detail.createdAt,
+      paidAt: detail.paidAt,
+      shippedAt: detail.shippedAt,
       refId: detail.refId,
       items: detail.items.map((it) => ({
         productId: it.productId,

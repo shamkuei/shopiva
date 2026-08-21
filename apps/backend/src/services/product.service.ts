@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, ilike, or } from 'drizzle-orm';
 import { db } from '../db';
 import { products, type Product } from '../db/schema';
 
@@ -17,8 +17,20 @@ export type ProductWrite = {
  */
 
 export const productService = {
-  list(): Promise<Product[]> {
-    return db.select().from(products).orderBy(desc(products.createdAt));
+  /**
+   * List products, newest first. Optional `search` filters by
+   * title/category/description (case-insensitive LIKE) server-side.
+   */
+  list(search?: string): Promise<Product[]> {
+    const q = search?.trim();
+    const filter = q
+      ? or(
+          ilike(products.title, `%${q}%`),
+          ilike(products.category, `%${q}%`),
+          ilike(products.description, `%${q}%`),
+        )
+      : undefined;
+    return db.select().from(products).where(filter).orderBy(desc(products.createdAt));
   },
 
   async getById(id: string): Promise<Product | null> {

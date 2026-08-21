@@ -17,6 +17,7 @@ import {
   timestamp,
   pgEnum,
   index,
+  boolean,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -68,6 +69,25 @@ export const products = pgTable(
 );
 
 // ─────────────────────────────────────────────────────────────
+// Coupon (discount code)
+// ─────────────────────────────────────────────────────────────
+
+export const coupons = pgTable('coupons', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  // Stored/served uppercase; lookup is case-insensitive via normalizeCouponCode.
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  // Whole-percent discount (1..99). Percent-only keeps the math transparent;
+  // no per-order minimums or fixed amounts yet.
+  percentOff: integer('percent_off').notNull(),
+  active: boolean('active').default(true).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+  // Total allowed redemptions (null = unlimited).
+  maxRedemptions: integer('max_redemptions'),
+  timesRedeemed: integer('times_redeemed').default(0).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─────────────────────────────────────────────────────────────
 // Order
 // ─────────────────────────────────────────────────────────────
 
@@ -76,13 +96,24 @@ export const orders = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     status: orderStatusEnum('status').default('pending').notNull(),
+    // Gross sum of line items (before discount).
     totalAmount: decimal('total_amount', { precision: 12, scale: 2 }).notNull(),
+    // Discount actually applied (subtotal − payable). Amount, not percent:
+    // the coupon's percent can change later; the order keeps what it got.
+    discountAmount: decimal('discount_amount', { precision: 12, scale: 2 })
+      .default('0')
+      .notNull(),
+    // Denormalized code for display/tracking on the order.
+    discountCode: varchar('discount_code', { length: 50 }),
     customerName: varchar('customer_name', { length: 255 }).notNull(),
     customerPhone: varchar('customer_phone', { length: 50 }),
     customerAddress: text('customer_address'),
     // Zarinpal payment tracking (nullable; populated during the payment flow).
     authority: varchar('authority', { length: 255 }),
     refId: varchar('ref_id', { length: 64 }),
+    // Real event times for the tracking timeline (nullable until they happen).
+    paidAt: timestamp('paid_at', { withTimezone: true }),
+    shippedAt: timestamp('shipped_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index('orders_status_idx').on(t.status)],
@@ -112,6 +143,32 @@ export const orderItems = pgTable(
 );
 
 // ─────────────────────────────────────────────────────────────
+// ContactMessage (storefront "تماس با ما" form)
+// ─────────────────────────────────────────────────────────────
+
+export const contactMessages = pgTable('contact_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name', { length: 120 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+  subject: varchar('subject', { length: 120 }).notNull(),
+  message: text('message').notNull(),
+  // Surfaced in the admin inbox; null until someone marks it handled.
+  handled: boolean('handled').default(false).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─────────────────────────────────────────────────────────────
+// NewsletterSubscriber (storefront newsletter signup)
+// ─────────────────────────────────────────────────────────────
+
+export const newsletterSubscribers = pgTable('newsletter_subscribers', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  // Stored lowercased; unique — re-subscribing is a no-op (idempotent).
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─────────────────────────────────────────────────────────────
 // Relations (power the relational query API: db.query.*.findMany({ with }))
 // ─────────────────────────────────────────────────────────────
 
@@ -133,3 +190,6 @@ export type User = typeof users.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
+export type Coupon = typeof coupons.$inferSelect;
+export type ContactMessage = typeof contactMessages.$inferSelect;
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;

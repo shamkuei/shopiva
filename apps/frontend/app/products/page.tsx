@@ -8,7 +8,7 @@ const API_URL = process.env.API_URL ?? 'http://localhost:4000';
 
 export const metadata: Metadata = {
   title: 'همه محصولات | شاپیوا',
-  description: 'مرور کامل محصولات فروشگاه شاپیوا — فیلتر بر اساس دسته‌بندی، قیمت و موجودی.',
+  description: 'مرور کامل محصولات فروشگاه شاپیوا — جستجو، فیلتر بر اساس دسته‌بندی، قیمت و موجودی.',
 };
 
 async function fetchJson<T>(path: string): Promise<T | null> {
@@ -21,8 +21,24 @@ async function fetchJson<T>(path: string): Promise<T | null> {
   }
 }
 
-export default async function ProductsPage() {
-  const products = await fetchJson<Product[]>('/api/products');
+// Sort keys ShopBrowser understands; anything else falls back to 'newest'.
+const SORTS = ['newest', 'price-asc', 'price-desc'] as const;
+type SortKey = (typeof SORTS)[number];
+
+type PageProps = {
+  searchParams: Promise<{ search?: string; sort?: string }>;
+};
+
+export default async function ProductsPage({ searchParams }: PageProps) {
+  const { search, sort } = await searchParams;
+  const q = search?.trim() ?? '';
+  const initialSort: SortKey =
+    sort && (SORTS as readonly string[]).includes(sort) ? (sort as SortKey) : 'newest';
+
+  // Search runs server-side against the API's ?search= filter.
+  const products = await fetchJson<Product[]>(
+    q ? `/api/products?search=${encodeURIComponent(q)}` : '/api/products',
+  );
 
   return (
     <div>
@@ -31,7 +47,9 @@ export default async function ProductsPage() {
       <main className="mx-auto max-w-6xl px-6">
         <div className="pt-10">
           <span className="text-sm font-semibold text-brand">مجموعه</span>
-          <h1 className="mt-1 font-display text-display-lg text-slate-900">همه محصولات</h1>
+          <h1 className="mt-1 font-display text-display-lg text-slate-900">
+            {q ? `نتایج جستجو برای «${q}»` : 'همه محصولات'}
+          </h1>
         </div>
 
         {products === null ? (
@@ -44,7 +62,7 @@ export default async function ProductsPage() {
             </p>
           </div>
         ) : (
-          <ShopBrowser products={products} />
+          <ShopBrowser products={products} initialSort={initialSort} searchQuery={q} />
         )}
       </main>
 
