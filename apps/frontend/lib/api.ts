@@ -5,17 +5,50 @@
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
+/**
+ * On a 401 (expired access token), try POST /api/auth/refresh once and retry
+ * the original request. Without this, admin pages silently die after the
+ * 15-minute access-token TTL even though a valid 7-day refresh cookie exists.
+ * A module-level lock dedupes concurrent refreshes.
+ */
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function tryRefresh(): Promise<boolean> {
+  refreshInFlight ??= fetch(`${API_URL}/api/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+    .then((res) => res.ok)
+    .catch(() => false)
+    .finally(() => {
+      refreshInFlight = null;
+    });
+  return refreshInFlight;
+}
+
 /** Authenticated JSON request (auth + admin endpoints). */
 export async function apiFetch<T>(
   path: string,
   opts: { method?: string; body?: unknown } = {},
 ): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: opts.method ?? 'GET',
-    credentials: 'include',
-    headers: opts.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-    body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-  });
+  const doFetch = () =>
+    fetch(`${API_URL}${path}`, {
+      method: opts.method ?? 'GET',
+      credentials: 'include',
+      headers: opts.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+    });
+
+  let res = await doFetch();
+
+  // Access token expired → refresh once and retry. The refresh endpoint
+  // itself must never recurse.
+  if (res.status === 401 && !path.startsWith('/api/auth/refresh')) {
+    const refreshed = await tryRefresh();
+    if (refreshed) {
+      res = await doFetch();
+    }
+  }
 
   if (res.status === 204) return undefined as T;
 

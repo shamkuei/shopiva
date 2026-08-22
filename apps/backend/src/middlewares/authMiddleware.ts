@@ -38,3 +38,16 @@ export const requireOwner = (req: Request, _res: Response, next: NextFunction) =
   }
   next();
 };
+
+/**
+ * Allow any staff role (OWNER/ADMIN/STAFF). Must run after `requireAuth`.
+ * Read/operate routes use this so ADMIN and STAFF accounts are useful;
+ * destructive/owner-only operations (e.g. deleting products) keep
+ * `requireOwner`.
+ */
+export const requireStaff = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.user || !['OWNER', 'ADMIN', 'STAFF'].includes(req.user.role)) {
+    return next(ApiError.forbidden('Staff access required'));
+  }
+  next();
+};

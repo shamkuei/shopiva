@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiFetch, formatPrice, resolveImageUrl } from '@/lib/api';
 import type { Product } from '@/lib/types';
+import { useAdminUser } from '@/app/admin/layout';
 import { ProductFormModal } from '@/components/admin/ProductFormModal';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { AdminNav } from '@/components/admin/AdminNav';
 
 export default function AdminProductsPage() {
+  const user = useAdminUser();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -137,12 +139,15 @@ export default function AdminProductsPage() {
                   >
                     ویرایش
                   </button>
-                  <button
-                    onClick={() => setDeleting(p)}
-                    className="ms-2 rounded-md border border-rose-200 px-3 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
-                  >
-                    حذف
-                  </button>
+                  {/* حذف فقط برای مالک — اندپوینت DELETE مالک می‌خواهد. */}
+                  {user?.role === 'OWNER' && (
+                    <button
+                      onClick={() => setDeleting(p)}
+                      className="ms-2 rounded-md border border-rose-200 px-3 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                    >
+                      حذف
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
